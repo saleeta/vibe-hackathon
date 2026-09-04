@@ -5,9 +5,16 @@
  * plain Node against a local nutrition-service instance.
  */
 
-import { ScaledNutrition } from "./Types";
+import { GlycemicEstimate, ScaledNutrition } from "./Types";
 
 export type PostJson = (url: string, body: unknown) => Promise<unknown>;
+
+export interface MealNutritionResponse {
+  items: ScaledNutrition[];
+  totals: Omit<ScaledNutrition, "food" | "weightG" | "matched">;
+  /** Estimated from food composition only — not a measured glucose value. */
+  glycemicEstimate: GlycemicEstimate;
+}
 
 export class NutritionClient {
   constructor(private readonly baseUrl: string, private readonly postJson: PostJson) {}
@@ -24,14 +31,8 @@ export class NutritionClient {
     return response;
   }
 
-  async meal(items: { food: string; weightG: number }[]): Promise<{
-    items: ScaledNutrition[];
-    totals: Omit<ScaledNutrition, "food" | "weightG" | "matched">;
-  }> {
-    const response = (await this.postJson(`${this.baseUrl}/nutrition/meal`, { items })) as {
-      items: ScaledNutrition[];
-      totals: Omit<ScaledNutrition, "food" | "weightG" | "matched">;
-    };
+  async meal(items: { food: string; weightG: number }[]): Promise<MealNutritionResponse> {
+    const response = (await this.postJson(`${this.baseUrl}/nutrition/meal`, { items })) as MealNutritionResponse;
     return response;
   }
 }

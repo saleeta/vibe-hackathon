@@ -1,6 +1,6 @@
 import express, { Request, Response } from "express";
 import { lookupFood } from "./lookup";
-import { scaleNutrition, sumNutrition } from "./scale";
+import { scaleNutrition, sumNutrition, classifyGlycemicLoad } from "./scale";
 
 const app = express();
 app.use(express.json());
@@ -12,7 +12,7 @@ app.get("/health", (_req: Request, res: Response) => {
 });
 
 /**
- * B3 — Food + grams -> scaled nutrition.
+ * B3 — Food + grams -> scaled nutrition (+ estimated glycemic load).
  * Body: { "food": "banana", "weightG": 118 }
  */
 app.post("/nutrition/lookup", (req: Request, res: Response) => {
@@ -29,8 +29,14 @@ app.post("/nutrition/lookup", (req: Request, res: Response) => {
 });
 
 /**
- * B3/B4 support — nutrition for a whole finalized meal (list of items).
+ * B3/B4 support — nutrition (+ meal-level glycemic load estimate) for a
+ * whole finalized meal (list of items).
  * Body: { "items": [{ "food": "chicken", "weightG": 180 }, { "food": "rice", "weightG": 150 }] }
+ *
+ * `glycemicEstimate` is derived purely from food composition — it is NOT a
+ * measured blood glucose value. See scale.ts:classifyGlycemicLoad for why
+ * the low/medium/high bands read differently for a whole meal than for a
+ * single food, and treat this as a rough relative indicator only.
  */
 app.post("/nutrition/meal", (req: Request, res: Response) => {
   const items = req.body?.items;
@@ -39,12 +45,24 @@ app.post("/nutrition/meal", (req: Request, res: Response) => {
     return;
   }
 
+  let allFoodsMatched = true;
   const perItem = items.map((item: { food: string; weightG: number }) => {
     const { food: matchedName, per100g, matched } = lookupFood(item.food);
+    if (!matched) allFoodsMatched = false;
     return { food: matchedName, weightG: item.weightG, matched, ...scaleNutrition(per100g, item.weightG) };
   });
 
-  res.json({ items: perItem, totals: sumNutrition(perItem) });
+  const totals = sumNutrition(perItem);
+
+  res.json({
+    items: perItem,
+    totals,
+    glycemicEstimate: {
+      totalGlycemicLoad: totals.glycemicLoad,
+      category: classifyGlycemicLoad(totals.glycemicLoad),
+      allFoodsMatched,
+    },
+  });
 });
 
 app.listen(PORT, () => {

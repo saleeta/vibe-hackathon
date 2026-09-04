@@ -12,22 +12,67 @@ Person A: "eating event detected" ─┐
                     ▼               ▼                ▼
               B1 Food          B2 Portion       (hand geometry,
               recognition      estimation        depth, from A)
-                    │               │
-                    └───────┬───────┘
+              (1 region per                          │
+               food; a plate                          │
+               is N regions)                          │
+                    │               │                  │
+                    └───────┬───────┴──────────────────┘
                             ▼
-              B4/B5 EatingSessionManager.addObservation()
-              (dedupes repeated looks at the same bite,
-               keeps the session open across bites,
-               closes it after inactivity)
+         B4/B5 EatingSessionManager.addPlateObservation()
+         (all foods from one frame committed as one atomic
+          group; dedup keyed PER FOOD, so a plate seen again
+          on the next frame doesn't inflate any of its items;
+          session stays open across bites/plates, closes
+          after inactivity)
                             │
                      session closes
                             ▼
-              B3 nutrition-service  (food + grams -> macros,
+              B3 nutrition-service  (food + grams -> macros
+                                      + estimated glycemic load,
                                       summed over the session)
                             │
                             ▼
               B6 ConfidenceAggregator -> MealSummary
+              (kcal/macros + estimated glycemic load;
+               a real measured glucose reading, if a
+               sensor is ever integrated, attaches
+               separately — see COMPLIANCE.md)
 ```
+
+### Plate vs. sequential bites
+
+A single frame can show one food (a bite in the hand) or several at once (a
+plate — rice, chicken, broccoli, sauce). `PersonBController` doesn't treat
+these differently: every region B1 detects in a frame becomes one
+observation, and all of them are submitted together via
+`EatingSessionManager.addPlateObservation(timestampSec, items)` — one atomic
+group at that timestamp. That group is safe to submit again on the very next
+frame if the plate is still in view, because `EatingSessionManager` tracks
+"in progress" state *per food name*, not per frame — so repeat looks at the
+same plate update the existing running-average estimates for rice/chicken/
+broccoli/sauce individually instead of appending duplicate line items. One
+session, closed once, produces one set of logged calories no matter how many
+frames or how many simultaneous foods went into it.
+
+(An earlier version of this tracked only a single "most recently active"
+item across the whole session, which meant a plate's foods could interfere
+with each other's dedup — e.g. looking at chicken again right after broccoli
+was seen would compare against broccoli's state instead of chicken's, and
+double-log the chicken. The per-food-keyed tracking above is what fixes
+that.)
+
+### Glycemic load estimate (extends B3)
+
+`nutrition-service` also carries a glycemic index (GI) per food and returns
+an estimated glycemic load (`GI × carbs / 100`, summed over the session) from
+`/nutrition/meal`, surfaced on `MealSummary.glycemicEstimate`. This is
+**derived entirely from food composition** — there is no way to measure
+actual blood glucose from a photo. `Types.ts` also defines
+`MeasuredGlucoseReading` as a separate, unfilled field on `MealSummary` for
+if/when a real CGM or fingerstick integration exists — the two are kept
+deliberately distinct so an estimate is never mistaken for, or silently
+merged into, a real reading. See `COMPLIANCE.md` for why this distinction is
+load-bearing for a diabetes-adjacent feature.
 
 ## Why the code is split the way it is
 
@@ -71,11 +116,11 @@ food nutrition database doesn't belong bundled into a Spectacles Lens build.
   × per-food shape/density model, scaled using the hand as a ruler), not a
   learned depth model. See the comment block at the top of
   `PortionEstimator.ts` for the exact assumptions and what to replace first.
-- **B4/B5 bite tracking** merges consecutive same-food observations within a
-  short gap (default 6s) into one item, and closes the session after a
-  longer inactivity gap (default 3 min). Two *non-contiguous* helpings of the
-  same food (e.g. going back for more chicken) become two session items, then
-  get summed together for display/totals via
+- **B4/B5 bite tracking** merges consecutive same-food observations (per food
+  name) within a short gap (default 6s) into one item, and closes the
+  session after a longer inactivity gap (default 3 min). Two *non-contiguous*
+  helpings of the same food (e.g. going back for more chicken) become two
+  session items, then get summed together for display/totals via
   `EatingSessionManager.summarizeByFood()`. Both timeouts are constructor
   parameters, not hardcoded, so they're easy to tune against real usage data.
 - **B6 confidence** combines eating/food/portion confidence with a weighted

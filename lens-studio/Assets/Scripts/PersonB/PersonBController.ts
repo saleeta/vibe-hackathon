@@ -56,32 +56,41 @@ export class PersonBController extends BaseScriptComponent {
 
   /** Person A calls this when their hand+food eating-event detector fires. */
   async onEatingEventDetected(input: EatingEventInput): Promise<void> {
-    const recognition = await this.foodRecognition.recognize(input.imageBase64);
-    const top = FoodRecognitionService.topCandidate(recognition);
-    if (!top) return; // nothing recognized with enough confidence — drop this frame
+    const recognizedItems = await this.foodRecognition.recognize(input.imageBase64, input.roiHint);
+    if (recognizedItems.length === 0) return; // nothing recognized with enough confidence — drop this frame
 
-    const portion = this.portionEstimator.estimate(top.name, input.foodBoundingBox, input.hand, top.confidence);
-
-    this.sessionManager.addObservation({
-      timestampSec: input.timestampSec,
-      food: top.name,
-      weightG: portion.estimatedWeightG,
-      weightUncertaintyG: portion.uncertaintyG,
-      foodConfidence: top.confidence,
-      portionConfidence: portion.confidence,
+    const observations = recognizedItems.map((item) => {
+      const portion = this.portionEstimator.estimate(item.food, item.boundingBox, input.hand, item.confidence);
+      return {
+        food: item.food,
+        weightG: portion.estimatedWeightG,
+        weightUncertaintyG: portion.uncertaintyG,
+        foodConfidence: item.confidence,
+        portionConfidence: portion.confidence,
+      };
     });
+
+    // Whether this frame showed a single bite or a whole plate, log every
+    // food detected in it as one atomic group at this timestamp (B4). Each
+    // food dedupes against its own prior state (B5), so it's safe to call
+    // this again on every subsequent frame the same plate stays in view —
+    // it won't inflate the plate's calories each time it's looked at again.
+    this.sessionManager.addPlateObservation(input.timestampSec, observations);
 
     // Confidence is logged per observation too (B6), not just at session close,
     // so the MVP has per-frame data to evaluate against.
-    const obsConfidence = ConfidenceAggregator.forObservation(input.eatingConfidence, top.confidence, portion.confidence);
-    print(`[PersonB] observed ${top.name} ~${portion.estimatedWeightG}g (overall confidence ${obsConfidence.overall})`);
+    recognizedItems.forEach((item, i) => {
+      const obs = observations[i];
+      const obsConfidence = ConfidenceAggregator.forObservation(input.eatingConfidence, item.confidence, obs.portionConfidence);
+      print(`[PersonB] observed ${item.food} ~${obs.weightG}g (overall confidence ${obsConfidence.overall})`);
+    });
   }
 
   private async onSessionClosed(session: EatingSession): Promise<void> {
     if (session.items.length === 0) return;
 
     const mealItems = EatingSessionManager.summarizeByFood(session).map((i) => ({ food: i.food, weightG: i.weightG }));
-    const { totals } = await this.nutritionClient.meal(mealItems);
+    const { totals, glycemicEstimate } = await this.nutritionClient.meal(mealItems);
 
     // TODO: thread A's per-observation eatingConfidence through the session instead of
     // defaulting to 1 — needs EatingSessionManager to track it alongside each item.
@@ -95,11 +104,17 @@ export class PersonBController extends BaseScriptComponent {
       items: session.items,
       totals,
       confidence,
+      glycemicEstimate,
+      // measuredGlucose is intentionally left unset here — this pipeline has no
+      // sensor input. Attach a real CGM/fingerstick reading to `summary` at
+      // whatever point a device integration exists; never fill this from the
+      // food-derived glycemicEstimate above.
     };
 
     print(
       `[PersonB] Eating Session ${summary.sessionId}: ${summary.totals.kcal} kcal, ` +
-        `${summary.totals.proteinG}g protein (confidence ${summary.confidence.overall})`
+        `${summary.totals.proteinG}g protein (confidence ${summary.confidence.overall}), ` +
+        `estimated glycemic load ${glycemicEstimate.totalGlycemicLoad} (${glycemicEstimate.category})`
     );
 
     // TODO: emit `summary` to whatever consumes it next (a display script,

@@ -5,6 +5,8 @@ export interface NutritionFacts {
   proteinG: number;
   carbsG: number;
   fatG: number;
+  /** Glycemic index (0-100), per 100g reference. 0 for foods with negligible carbs. */
+  gi: number;
 }
 
 /** Aliases for common phrasing variance from B1's food labels. */

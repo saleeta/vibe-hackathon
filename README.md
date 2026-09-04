@@ -4,14 +4,25 @@ Snap Spectacles Lens (Lens Studio), calorie/nutrition tracking. Person A
 detects "food is in the hand" eating events; this repo implements what
 happens next — Person B's side:
 
-- **B1** food recognition
+- **B1** food recognition — one detection per food in a frame, so a plate
+  (rice + chicken + broccoli + sauce) is recognized as multiple simultaneous
+  items, not just one
 - **B2** portion estimation (using the hand as a scale reference)
-- **B3** nutrition engine (a separate service — food + grams → macros)
-- **B4** meal aggregation (bites grouped into one eating session)
-- **B5** duplicate detection (repeated looks at the same bite don't get
-  logged twice)
+- **B3** nutrition engine (a separate service — food + grams → macros, plus
+  an estimated glycemic load)
+- **B4** meal aggregation — a whole plate detected in one frame, or a string
+  of separate bites over time, both collapse into **one** eating session and
+  **one** logged set of calories, not one log entry per food or per frame
+- **B5** duplicate detection, tracked per food — repeatedly seeing the same
+  plate/bite across frames updates the running estimate instead of logging
+  it again, while genuinely new food (a second helping) still counts
 - **B6** confidence / uncertainty, carried at every stage instead of a false
   point estimate
+
+Also logs an **estimated glycemic load** per meal (glycemic index × carbs,
+from food composition) — explicitly not a measured blood glucose value; see
+`docs/COMPLIANCE.md` for why that distinction matters for a diabetes-adjacent
+feature, and where a real CGM/glucometer reading would attach instead.
 
 ## Layout
 

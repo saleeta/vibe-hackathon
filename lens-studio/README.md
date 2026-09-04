@@ -15,7 +15,10 @@ project rooted here and it will pick these files up.
    (`InternetModule`) — Lens Studio will flag this if it's missing.
 4. Have Person A's eating-detection script call
    `personBController.onEatingEventDetected(input)` with an `EatingEventInput`
-   (see `Assets/Scripts/PersonB/Types.ts`) once per detected eating frame.
+   (see `Assets/Scripts/PersonB/Types.ts`) once per detected eating frame. A
+   only needs to send the frame plus an optional rough ROI hint — B1 itself
+   detects and localizes every food in the frame, so a plate with several
+   foods in it is handled automatically as one call, not one call per food.
 5. Put any HUD elements that display session/food/kcal on the camera layer
    that feeds the Capture Target — see `../docs/SCREEN_RECORDING.md`.
 
