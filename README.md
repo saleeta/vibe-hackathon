@@ -1,3 +1,0 @@
-# Vibe Hackathon
-
-Hackathon project.
