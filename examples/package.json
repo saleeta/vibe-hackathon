@@ -1,0 +1,14 @@
+{
+  "name": "person-b-demo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "End-to-end demo of B1-B6 in plain Node, no Lens Studio required.",
+  "scripts": {
+    "start": "ts-node demo.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.9",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.3"
+  }
+}

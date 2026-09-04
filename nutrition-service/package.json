@@ -1,0 +1,21 @@
+{
+  "name": "nutrition-service",
+  "version": "0.1.0",
+  "private": true,
+  "description": "B3 — food + grams -> kcal/protein/carbs/fat. Standalone HTTP service called by the Lens over InternetModule.",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.14.9",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.3"
+  }
+}
