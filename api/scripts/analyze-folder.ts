@@ -13,7 +13,7 @@
 
 import * as fs from "fs";
 import * as path from "path";
-import { MealSummary } from "../../lens-studio/Assets/Scripts/PersonB/Types";
+import { MealSummary } from "../../lens-studio/spectacles/Assets/PersonB/Types";
 
 const API_URL = process.env.API_URL ?? "http://localhost:4002";
 const TEST_IMAGES_DIR = path.resolve(__dirname, "../../test-images");

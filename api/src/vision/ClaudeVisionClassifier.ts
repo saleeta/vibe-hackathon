@@ -7,14 +7,14 @@
  * PortionEstimator.fromVisionEstimate).
  *
  * This is one interchangeable implementation of FoodClassifierBackend
- * (../../../lens-studio/Assets/Scripts/PersonB/FoodRecognitionService) —
+ * (../../../lens-studio/spectacles/Assets/PersonB/FoodRecognitionService) —
  * swap it for a different vision model/service without touching anything
  * downstream (B2-B6 don't know or care where the detection came from).
  */
 
 import Anthropic from "@anthropic-ai/sdk";
-import { FoodClassifierBackend } from "../../../lens-studio/Assets/Scripts/PersonB/FoodRecognitionService";
-import { BoundingBox, FoodRegionDetection } from "../../../lens-studio/Assets/Scripts/PersonB/Types";
+import { FoodClassifierBackend } from "../../../lens-studio/spectacles/Assets/PersonB/FoodRecognitionService";
+import { BoundingBox, FoodRegionDetection } from "../../../lens-studio/spectacles/Assets/PersonB/Types";
 
 const MAX_HINT_LENGTH = 100;
 

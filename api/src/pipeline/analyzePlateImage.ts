@@ -7,7 +7,7 @@
  * same source of truth.
  *
  * Also this repo's implementation of Person A's `IFoodAnalysisClient`
- * backend contract (../../lens-studio/Assets/Scripts/PersonA/A5_EatingTrigger/FoodAnalysisClient.ts):
+ * backend contract (../../lens-studio/spectacles/Assets/PersonA/A5_EatingTrigger/FoodAnalysisClient.ts):
  * `eatingEventContext`, when present, carries A4's real EatingEventPayload
  * (food_object / confidence / timestampMillis) from a live Spectacles
  * eating event — `detection_confidence` becomes B6's eatingConfidence
@@ -15,12 +15,12 @@
  * and `food_hint` is passed to B1 as a disambiguation aid.
  */
 
-import { FoodRecognitionService } from "../../../lens-studio/Assets/Scripts/PersonB/FoodRecognitionService";
-import { PortionEstimator } from "../../../lens-studio/Assets/Scripts/PersonB/PortionEstimator";
-import { NutritionClient } from "../../../lens-studio/Assets/Scripts/PersonB/NutritionClient";
-import { EatingSessionManager, ObservationInput } from "../../../lens-studio/Assets/Scripts/PersonB/EatingSessionManager";
-import { ConfidenceAggregator } from "../../../lens-studio/Assets/Scripts/PersonB/ConfidenceAggregator";
-import { EatingSession, MealSummary } from "../../../lens-studio/Assets/Scripts/PersonB/Types";
+import { FoodRecognitionService } from "../../../lens-studio/spectacles/Assets/PersonB/FoodRecognitionService";
+import { PortionEstimator } from "../../../lens-studio/spectacles/Assets/PersonB/PortionEstimator";
+import { NutritionClient } from "../../../lens-studio/spectacles/Assets/PersonB/NutritionClient";
+import { EatingSessionManager, ObservationInput } from "../../../lens-studio/spectacles/Assets/PersonB/EatingSessionManager";
+import { ConfidenceAggregator } from "../../../lens-studio/spectacles/Assets/PersonB/ConfidenceAggregator";
+import { EatingSession, MealSummary } from "../../../lens-studio/spectacles/Assets/PersonB/Types";
 
 export interface AnalyzePlateImageDeps {
   foodRecognition: FoodRecognitionService;

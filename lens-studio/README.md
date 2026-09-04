@@ -1,13 +1,13 @@
 # Lens Studio project
 
-`Assets/Scripts/` holds both halves of the Lens: `PersonA/` (perception —
+`spectacles/Assets/` holds both halves of the Lens: `PersonA/` (perception —
 detecting an eating event) and `PersonB/` (the nutrition HUD). Open (or
 create) a Lens Studio project rooted here and it will pick these files up as
 one project.
 
 ## Wiring into the Scene
 
-Person A's own `Assets/Scripts/PersonA/README.md` has the full per-component
+Person A's own `spectacles/Assets/PersonA/README.md` has the full per-component
 `@input` table (camera module, hands, thresholds, etc.) — read that first.
 The Person-B-specific pieces:
 

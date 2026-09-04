@@ -29,6 +29,10 @@ import { PerformanceProfiler } from './PerformanceProfiler';
  * the installed Lens Studio 5.15.4 CameraModule — fall back to tearing
  * down/recreating the texture request if hot-swapping resolution isn't
  * supported.
+ *
+ * `.control` is typed as the generic TextureProvider, which has no
+ * onNewFrame — cast to CameraTextureProvider, which does (confirmed against
+ * https://developers.snap.com/lens-studio/api/lens-scripting/interfaces/Built-In.CameraTextureProvider.html).
  */
 @component
 export class CameraSampler extends BaseScriptComponent {
@@ -73,7 +77,7 @@ export class CameraSampler extends BaseScriptComponent {
     request.cameraId = CameraModule.CameraId.Default_Color;
     request.imageSmallerDimension = this.lowResSmallerDimension;
     this.cameraTexture = this.cameraModule.requestCamera(request);
-    this.cameraTexture.control.onNewFrame.add((frame) => this.onNativeFrame(frame));
+    (this.cameraTexture.control as CameraTextureProvider).onNewFrame.add((frame) => this.onNativeFrame(frame));
   }
 
   private onNativeFrame(frame: CameraFrame): void {
@@ -124,7 +128,7 @@ export class CameraSampler extends BaseScriptComponent {
       request.cameraId = CameraModule.CameraId.Default_Color;
       request.imageSmallerDimension = this.hqSmallerDimension;
       this.cameraTexture = this.cameraModule.requestCamera(request);
-      this.cameraTexture.control.onNewFrame.add((frame) => this.onNativeFrame(frame));
+      (this.cameraTexture.control as CameraTextureProvider).onNewFrame.add((frame) => this.onNativeFrame(frame));
     });
   }
 
@@ -133,7 +137,7 @@ export class CameraSampler extends BaseScriptComponent {
     request.cameraId = CameraModule.CameraId.Default_Color;
     request.imageSmallerDimension = this.lowResSmallerDimension;
     this.cameraTexture = this.cameraModule.requestCamera(request);
-    this.cameraTexture.control.onNewFrame.add((frame) => this.onNativeFrame(frame));
+    (this.cameraTexture.control as CameraTextureProvider).onNewFrame.add((frame) => this.onNativeFrame(frame));
   }
 
   getCurrentFPS(): number {

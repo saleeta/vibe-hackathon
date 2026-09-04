@@ -3,7 +3,7 @@
 Snap Spectacles Lens (Lens Studio), calorie/nutrition tracking. Two halves,
 merged into one Lens Studio project:
 
-- **Person A** — `lens-studio/Assets/Scripts/PersonA/` — perception: camera
+- **Person A** — `lens-studio/spectacles/Assets/PersonA/` — perception: camera
   sampling, hand tracking, food-in-hand classification, and a temporal state
   machine that confirms a genuine eating event (not just food passing
   through frame). See `PersonA/README.md` for the full A1-A6 breakdown.
@@ -57,7 +57,7 @@ food in hand → A's state machine confirms an eating event → HQ frame capture
 ## Modular by design
 
 Every B-stage lives in its own file with no dependency on the others' guts
-(`lens-studio/Assets/Scripts/PersonB/*.ts` — plain TypeScript, swap any one
+(`lens-studio/spectacles/Assets/PersonB/*.ts` — plain TypeScript, swap any one
 implementation without touching the rest), and every stage is also reachable
 as a plain HTTP call:
 
@@ -74,8 +74,8 @@ shapes.
 ## Layout
 
 ```
-lens-studio/            One Lens Studio project — both halves live under Assets/Scripts/
-  Assets/Scripts/
+lens-studio/            One Lens Studio project — both halves live under spectacles/Assets/
+  spectacles/Assets/
     PersonA/              Perception (A1-A6) — camera, hands, food-in-hand, eating-event state machine
     PersonB/               Nutrition pipeline modules + NutritionHUD (the visual)
 nutrition-service/       B3 — standalone HTTP nutrition lookup/scaling service

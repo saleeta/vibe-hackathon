@@ -1,6 +1,6 @@
 # api — Person B's HTTP surface
 
-Every stage of B1-B6 is a plain TypeScript module (`../lens-studio/Assets/Scripts/PersonB/`)
+Every stage of B1-B6 is a plain TypeScript module (`../lens-studio/spectacles/Assets/PersonB/`)
 that can be imported directly — but this service puts a REST endpoint in
 front of each one too, so nothing requires importing TS to use: curl, a
 script in any language, or a future non-Lens client can all drive the

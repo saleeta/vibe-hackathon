@@ -7,12 +7,12 @@
  */
 
 import express, { NextFunction, Request, Response } from "express";
-import { FoodRecognitionService } from "../../lens-studio/Assets/Scripts/PersonB/FoodRecognitionService";
-import { PortionEstimator } from "../../lens-studio/Assets/Scripts/PersonB/PortionEstimator";
-import { NutritionClient } from "../../lens-studio/Assets/Scripts/PersonB/NutritionClient";
+import { FoodRecognitionService } from "../../lens-studio/spectacles/Assets/PersonB/FoodRecognitionService";
+import { PortionEstimator } from "../../lens-studio/spectacles/Assets/PersonB/PortionEstimator";
+import { NutritionClient } from "../../lens-studio/spectacles/Assets/PersonB/NutritionClient";
 import { ClaudeVisionClassifier } from "./vision/ClaudeVisionClassifier";
 import { analyzePlateImage, NoFoodRecognizedError } from "./pipeline/analyzePlateImage";
-import { MealSummary } from "../../lens-studio/Assets/Scripts/PersonB/Types";
+import { MealSummary } from "../../lens-studio/spectacles/Assets/PersonB/Types";
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4002;
 const NUTRITION_SERVICE_URL = process.env.NUTRITION_SERVICE_URL ?? "http://localhost:4001";

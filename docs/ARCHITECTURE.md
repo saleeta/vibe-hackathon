@@ -1,6 +1,6 @@
 # Architecture — Person A + Person B, merged
 
-Person A's perception module (`lens-studio/Assets/Scripts/PersonA/`, A1-A6)
+Person A's perception module (`lens-studio/spectacles/Assets/PersonA/`, A1-A6)
 detects "food is in the hand, and it's genuinely being eaten" and captures a
 high-quality frame. Person B's pipeline (`PersonB/`, `api/`, `nutrition-service/`)
 turns that frame into calories, macros, and an estimated glycemic load, shown
@@ -138,7 +138,7 @@ why that distinction is load-bearing for a diabetes-adjacent feature.
 
 ## Why the code is split the way it is
 
-`lens-studio/Assets/Scripts/` has two independent packages that only touch
+`lens-studio/spectacles/Assets/` has two independent packages that only touch
 each other through `PersonA/Core/PerceptionEvents.ts`'s signal bus:
 
 - **`PersonA/`** — perception (A1-A6). Every script talks to its neighbors

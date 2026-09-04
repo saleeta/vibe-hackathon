@@ -5,28 +5,52 @@ import { IObjectDetector } from './IObjectDetector';
 
 /**
  * Reference IObjectDetector implementation, running a Lens Studio
- * MLComponent (food/object classification or detection model) against each
- * sampled frame from A1.
+ * MLComponent (food/object classification model) against each sampled
+ * frame from A1.
  *
  * This is intentionally a thin adapter: swap it for a cloud-based detector,
  * a mocked one for testing, or a different model without touching A2-A6 —
  * they all just listen to PerceptionEvents.onObjectsDetected.
  *
+ * MLComponent usage verified against
+ * https://developers.snap.com/lens-studio/api/lens-scripting/classes/Built-In.MLComponent.html
+ * and the SnapML overview (https://developers.snap.com/lens-studio/features/snap-ml/ml-component/ml-component-overview):
+ *  - Supported model formats: ONNX (.onnx) and TensorFlow Lite (.tflite),
+ *    imported into the Asset Browser and assigned to `mlComponent.model`.
+ *  - Input binding is `mlComponent.getInput(name).texture = <texture>` —
+ *    reassignable per call, which is what lets this component feed it a
+ *    new texture every sampled frame instead of a static Inspector-bound one.
+ *  - `runImmediate(true)` runs inference synchronously — used here (rather
+ *    than `autoRun`, which re-runs every RENDER frame) so inference only
+ *    happens at A1's throttled sample rate, matching A1's stated perf
+ *    posture (10-15 FPS, not full camera rate).
+ *  - Output is `mlComponent.getOutput(name).data`, a Float32Array — not
+ *    reliable before `onLoadingFinished` has fired at least once.
+ *
  * TODO(model-specific — fill in once the trained model is chosen):
  *  - `classLabels` must match the model's output class order.
- *  - `decodeOutput` must match the model's actual output tensor layout
- *    (single-label classification vs. multi-box detection). The
- *    implementation below assumes a simple single-label classifier over
- *    the whole frame (softmax vector) as the MVP baseline, with the whole
+ *  - `inputName`/`outputName` must match the actual tensor names the
+ *    model/Inspector setup uses (defaults below are common conventions,
+ *    not guaranteed for every exported model).
+ *  - `decodeOutput` assumes a simple single-label classifier over the
+ *    whole frame (a softmax vector) as the MVP baseline, with the whole
  *    frame treated as one "detected object" covering the full bounding
  *    box — adequate for "is there food in view" but not multi-object
- *    localization. Upgrade to a real detector output (boxes + scores) when
+ *    localization. Upgrade to a real detector's box+score output when
  *    available.
  */
 @component
 export class OnDeviceObjectDetector extends BaseScriptComponent implements IObjectDetector {
   @input
   mlComponent: MLComponent;
+
+  @input
+  @hint('Tensor name of the model input the frame texture binds to.')
+  inputName: string = 'input';
+
+  @input
+  @hint('Tensor name of the model output to read class scores from.')
+  outputName: string = 'output';
 
   @input
   @hint('Class labels in the exact order the model outputs them.')
@@ -42,6 +66,7 @@ export class OnDeviceObjectDetector extends BaseScriptComponent implements IObje
   readonly onObjectsDetected = new Signal<DetectedObject[]>();
 
   private running = false;
+  private modelReady = false;
   private unsubscribe: (() => void) | null = null;
 
   onAwake(): void {
@@ -51,6 +76,13 @@ export class OnDeviceObjectDetector extends BaseScriptComponent implements IObje
   start(): void {
     if (this.running) return;
     this.running = true;
+
+    if (this.mlComponent) {
+      this.mlComponent.onLoadingFinished = () => {
+        this.modelReady = true;
+      };
+    }
+
     const handler = (sample: { texture: Texture; timestampMillis: number }) => this.runInference(sample.texture);
     PerceptionEvents.onFrameSampled.add(handler);
     this.unsubscribe = () => PerceptionEvents.onFrameSampled.remove(handler);
@@ -63,21 +95,19 @@ export class OnDeviceObjectDetector extends BaseScriptComponent implements IObje
   }
 
   private runInference(texture: Texture): void {
-    if (!this.mlComponent || this.classLabels.length === 0) return;
+    if (!this.mlComponent || !this.modelReady || this.classLabels.length === 0) return;
 
-    // TODO(verify): MLComponent's exact input-binding API. Many Lens Studio
-    // ML templates bind the input texture via an InputPlaceholder asset
-    // configured in the Inspector rather than a runtime call — if so, this
-    // component's `mlComponent` input should instead be that placeholder,
-    // and this method just needs to call `this.mlComponent.runScheduled()`
-    // or read `mlComponent.getOutput(name)` after the model's own
-    // OnLoadEvent/UpdateEvent has already run against the bound texture.
-    const outputs = this.mlComponent.getOutput?.('output');
-    if (!outputs) return;
+    const input = this.mlComponent.getInput(this.inputName);
+    const output = this.mlComponent.getOutput(this.outputName);
+    if (!input || !output) return;
 
-    const scores: Float32Array = outputs.data ?? outputs;
+    input.texture = texture;
+    this.mlComponent.runImmediate(true); // synchronous — result is valid to read immediately after
+
+    const scores = output.data;
+    if (!scores) return;
+
     const detections: DetectedObject[] = [];
-
     for (let i = 0; i < this.classLabels.length; i++) {
       const confidence = scores[i];
       if (confidence < this.minConfidence) continue;
