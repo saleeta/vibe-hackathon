@@ -1,7 +1,12 @@
 node_modules/
 dist/
+build/
+.next/
+.vercel/
 *.log
 .DS_Store
+.env
+.env.local
 
 # personal test photos + generated reports — never committed
 test-images/*
