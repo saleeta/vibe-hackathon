@@ -39,6 +39,11 @@ export class AutoLogDisplay extends BaseScriptComponent {
   @widget(new SliderWidget(24, 72, 1))
   fontSize: number = 42;
 
+  @input
+  @allowUndefined
+  @hint('Short confirmation chime played the moment something is auto-logged. Optional.')
+  logChimeAudio: AudioComponent;
+
   private hideCallback: DelayedCallbackEvent | null = null;
   private activeAnim: UpdateEvent | null = null;
 
@@ -81,6 +86,7 @@ export class AutoLogDisplay extends BaseScriptComponent {
     const sceneObject = this.logText.getSceneObject();
     sceneObject.enabled = true;
     this.animateOpacity(0, 1, this.fadeMs);
+    this.logChimeAudio?.play(1);
 
     // Cancel any pending hide from a previous log so back-to-back bites
     // each get their own full display window.

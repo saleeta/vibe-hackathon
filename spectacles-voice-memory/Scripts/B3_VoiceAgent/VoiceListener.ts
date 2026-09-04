@@ -57,11 +57,21 @@ export class VoiceListener extends BaseScriptComponent {
   }
 
   private wirePinchTrigger(): void {
-    const hands: string[] = this.listenHand === 'both' ? ['left', 'right'] : [this.listenHand];
-    for (const hand of hands) {
-      const handType = hand === 'left' ? GestureModule.HandType.Left : GestureModule.HandType.Right;
-      nativeGestureModule.getPinchDownEvent(handType).add(() => this.startListening());
-      nativeGestureModule.getPinchUpEvent(handType).add(() => this.stopListening());
+    // Editor-preview fallback: GestureModule's pinch events depend on real
+    // hand-tracking hardware and threw an uncaught exception in the desktop
+    // simulator during testing (unlike CameraModule's calls, which fail
+    // gracefully with a catchable error) — same "give every feature an
+    // isEditor() fallback" rule as CameraSampler/FrameSnapshotter, just a
+    // harder failure mode here.
+    try {
+      const hands: string[] = this.listenHand === 'both' ? ['left', 'right'] : [this.listenHand];
+      for (const hand of hands) {
+        const handType = hand === 'left' ? GestureModule.HandType.Left : GestureModule.HandType.Right;
+        nativeGestureModule.getPinchDownEvent(handType).add(() => this.startListening());
+        nativeGestureModule.getPinchUpEvent(handType).add(() => this.stopListening());
+      }
+    } catch (err) {
+      print(`[VoiceListener] Failed to wire pinch trigger (expected in some editor-preview states): ${err}`);
     }
   }
 
