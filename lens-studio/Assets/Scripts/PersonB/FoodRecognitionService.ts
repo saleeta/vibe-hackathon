@@ -76,7 +76,12 @@ export class FoodRecognitionService {
     for (const region of regions) {
       const top = topCandidate(region.candidates);
       if (top && top.confidence >= MIN_CONFIDENCE_TO_KEEP) {
-        items.push({ boundingBox: region.boundingBox, food: top.name, confidence: top.confidence });
+        items.push({
+          boundingBox: region.boundingBox,
+          food: top.name,
+          confidence: top.confidence,
+          visionPortionEstimate: region.visionPortionEstimate,
+        });
       }
     }
     return items;

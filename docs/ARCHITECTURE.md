@@ -74,6 +74,41 @@ deliberately distinct so an estimate is never mistaken for, or silently
 merged into, a real reading. See `COMPLIANCE.md` for why this distinction is
 load-bearing for a diabetes-adjacent feature.
 
+## Two ways to feed the pipeline
+
+Live Spectacles capture (via `PersonBController`) is one path in. There's a
+second: `api/`'s `POST /v1/analyze`, for testing against arbitrary food
+photos (see `test-images/`) or for any non-Lens client. Both paths run the
+same B1-B6 modules — they differ only in where the frame comes from and,
+because of that, which B2 method applies:
+
+|  | Live Spectacles (`PersonBController`) | Standalone photo (`api` `/v1/analyze`) |
+|---|---|---|
+| Frame source | A's hand-to-mouth capture | uploaded image file |
+| B2 method | hand geometry (`PortionEstimator.estimate`) | vision-direct (`PortionEstimator.fromVisionEstimate`) |
+| Why | a hand is in frame to use as a scale reference | a flat plate photo usually has no hand/depth data at all |
+| Session | real multi-frame session, closes on inactivity | one-shot session: opens and closes immediately around a single image |
+
+The vision-direct path asks the classifier backend for a weight estimate
+directly (`estimated_weight_g` + its own confidence — the alternate B2 shape
+from the original spec), the same way a commercial food-scanning app reasons
+about portion size from plate size and typical servings, rather than
+computing it from geometry. `api/src/vision/ClaudeVisionClassifier.ts` is the
+concrete implementation, calling Claude's vision API; it's one interchangeable
+`FoodClassifierBackend` (`FoodRecognitionService.ts`) — swap in a different
+vision model/service without touching B2-B6.
+
+## Every stage is also an HTTP call
+
+`api/` puts a REST endpoint in front of B1, B2 (hand-geometry method), and
+the composed pipeline; `nutrition-service/` does the same for B3. Nothing
+downstream needs to import TypeScript to use this pipeline — see
+`api/README.md` and `nutrition-service/README.md` for the full endpoint
+list and request/response shapes. B4/B5/B6 aren't separately networked
+(session state doesn't fit a single stateless call, and a one-shot photo
+doesn't need multi-call session semantics) but stay fully modular as
+independently importable/testable TS modules either way.
+
 ## Why the code is split the way it is
 
 `lens-studio/Assets/Scripts/PersonB/` has one Lens-Studio-coupled file
@@ -112,10 +147,13 @@ food nutrition database doesn't belong bundled into a Spectacles Lens build.
 
 ## Known MVP simplifications (documented on purpose, not hidden)
 
-- **B2 portion estimation** is a geometric heuristic (bounding-box footprint
-  × per-food shape/density model, scaled using the hand as a ruler), not a
-  learned depth model. See the comment block at the top of
-  `PortionEstimator.ts` for the exact assumptions and what to replace first.
+- **B2 portion estimation**'s hand-geometry method is a geometric heuristic
+  (bounding-box footprint × per-food shape/density model, scaled using the
+  hand as a ruler), not a learned depth model — see the comment block at the
+  top of `PortionEstimator.ts`. The vision-direct method (used for standalone
+  photos) is only as good as the classifier's own visual-portion reasoning,
+  with no independent way to verify it; both paths carry an explicit
+  uncertainty band rather than presenting a guess as exact.
 - **B4/B5 bite tracking** merges consecutive same-food observations (per food
   name) within a short gap (default 6s) into one item, and closes the
   session after a longer inactivity gap (default 3 min). Two *non-contiguous*

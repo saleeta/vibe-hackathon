@@ -47,6 +47,17 @@ shippable on Spectacles.
   If the product direction genuinely needs blood-glucose logging for
   diabetics (not just an estimate), that means integrating a real glucose
   sensor/device API, not extrapolating further from food photos.
+- **`api/`'s vision backend sends photos to a third party.**
+  `ClaudeVisionClassifier` sends the full image to Anthropic's API over HTTPS
+  to identify food and estimate portions — this is real third-party data
+  transmission, not hypothetical, whenever `/v1/food/classify` or
+  `/v1/analyze` is called. That's consistent with the "camera frames leave
+  the device" point above for the live-Spectacles path, but worth restating
+  because `test-images/` photos are whatever the user drops in that folder —
+  don't put images there that shouldn't be sent to Anthropic's API. Check
+  Anthropic's API terms/data-handling policy before sending anything
+  sensitive, and see the "minimize what leaves the device" point above — the
+  same one-frame-per-event principle should hold for any real deployment.
 - **No PII persistence built here.** This pipeline as written doesn't persist
   images or eating history anywhere — `PersonBController.onSessionClosed` has
   a `TODO` for wherever session summaries get sent next. If that becomes a

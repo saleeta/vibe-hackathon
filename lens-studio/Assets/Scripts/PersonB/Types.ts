@@ -57,6 +57,18 @@ export interface FoodCandidate {
 export interface FoodRegionDetection {
   boundingBox: BoundingBox;
   candidates: FoodCandidate[];
+  /**
+   * Optional direct portion estimate from the classifier backend itself
+   * (weight in grams + its own confidence) — used when there's no hand in
+   * frame to use as a scale reference (e.g. a flat test photo of a plate),
+   * as an alternative to PortionEstimator's hand-geometry math.
+   */
+  visionPortionEstimate?: VisionPortionEstimate;
+}
+
+export interface VisionPortionEstimate {
+  estimatedWeightG: number;
+  confidence: number;
 }
 
 /** A region resolved down to its top candidate — B2/B4 only care about this. */
@@ -64,6 +76,7 @@ export interface RecognizedFoodItem {
   boundingBox: BoundingBox;
   food: string;
   confidence: number;
+  visionPortionEstimate?: VisionPortionEstimate;
 }
 
 export interface PortionEstimate {

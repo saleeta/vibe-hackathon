@@ -1,0 +1,20 @@
+{
+  "name": "person-b-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "One HTTP API for the whole Person B pipeline (B1-B6) plus a per-stage endpoint for each — image in, calories/nutrition/glycemic estimate out.",
+  "scripts": {
+    "dev": "ts-node src/index.ts",
+    "analyze-folder": "ts-node scripts/analyze-folder.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.123.0",
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.14.9",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.3"
+  }
+}

@@ -14,7 +14,7 @@
  * on purpose never collapsed to a false-precision point estimate.
  */
 
-import { BoundingBox, HandObservation, PortionEstimate } from "./Types";
+import { BoundingBox, HandObservation, PortionEstimate, VisionPortionEstimate } from "./Types";
 
 const DEFAULT_HAND_WIDTH_CM = 8.5; // adult palm width, used until per-user calibration exists
 
@@ -45,6 +45,8 @@ const DEFAULT_SHAPE_MODEL: FoodShapeModel = {
 
 /** Estimated relative error of this whole pipeline; drives the ± band. */
 const RELATIVE_UNCERTAINTY = 0.35;
+/** Wider band for the vision-direct path — no measured real-world reference at all. */
+const VISION_RELATIVE_UNCERTAINTY = 0.45;
 
 function pxPerCm(hand: HandObservation): number {
   const handWidthCm = hand.handWidthCm ?? DEFAULT_HAND_WIDTH_CM;
@@ -95,6 +97,33 @@ export class PortionEstimator {
       food: foodName,
       estimatedWeightG: round1(weightG),
       uncertaintyG: round1(weightG * RELATIVE_UNCERTAINTY),
+      confidence: round2(portionConfidence),
+    };
+  }
+
+  /**
+   * Alternate B2 path for when there's no hand in frame to use as a scale
+   * reference — e.g. a flat test photo of a plate rather than a live
+   * Spectacles hand-to-mouth capture. Wraps whatever weight estimate the
+   * vision backend itself produced (from visual portion cues: plate size,
+   * comparison objects, typical serving sizes) with the same kind of
+   * explicit uncertainty band as the geometric method, rather than
+   * presenting a vision-guessed number as exact. Slightly wider relative
+   * uncertainty than the geometric method since it's not grounded in any
+   * measured real-world reference at all.
+   */
+  static fromVisionEstimate(
+    foodName: string,
+    visionEstimate: VisionPortionEstimate,
+    foodConfidence: number
+  ): PortionEstimate {
+    const weightG = Math.max(0, visionEstimate.estimatedWeightG);
+    const portionConfidence = clamp01(foodConfidence * clamp01(visionEstimate.confidence));
+
+    return {
+      food: foodName,
+      estimatedWeightG: round1(weightG),
+      uncertaintyG: round1(weightG * VISION_RELATIVE_UNCERTAINTY),
       confidence: round2(portionConfidence),
     };
   }
