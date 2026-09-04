@@ -61,7 +61,7 @@ Scripts/
 | Component | Key inputs | Notes |
 |---|---|---|
 | `CameraSampler` | `cameraModule` (Camera Module asset) | Owns the one active camera stream. Everything else reacts to its events. |
-| `HandTracker` | `faceAnchor` (SceneObject) | Point `faceAnchor` at the world camera / head object as a mouth-position approximation. |
+| `HandTracker` | `faceAnchorOverride` (optional) | Leave empty — auto-uses `WorldCameraFinderProvider` (wearer's head pose) as the face/mouth anchor. Only set this if you need a different reference point. |
 | `OnDeviceObjectDetector` *(or your own `IObjectDetector`)* | `mlComponent`, `classLabels`, `foodLabels` | Swap this out entirely for a different detection strategy — A3 only needs `onObjectsDetected` events. |
 | `FoodInHandClassifier` | `worldCamera` (optional) | Pure classifier — never triggers anything by itself. |
 | `EatingEventDetector` | thresholds (see file) | Tune `faceProximityUnits` / dwell times against your scene's world scale. |
@@ -107,6 +107,33 @@ Every transition requires its condition to hold for a minimum dwell time
 stalls). A `cooldownMs` after each `EATING_EVENT` prevents one bite from
 being logged twice.
 
+## Testing without hardware: `DebugHarness`
+
+`Scripts/DebugHarness.ts` is the one other scene object this module needs
+beyond its own components (per `spectacles-522-portable-design`'s "root +
+DebugHarness" rule). Only active in editor preview (`isEditor()` guarded —
+never runs on-device). Call from a debug panel or the Logger:
+
+- `simulateObjectDetected('apple')` — fake a food detection, skip the ML model
+- `simulateHand(HandSide.Right, true)` — fake a hand approaching/away from the face
+- `simulateEatingEvent('apple')` — skip straight to A5 (test HQ capture + backend)
+- `simulateFoodAnalyzed({ name: 'Apple', grams: 180, kcal: 95 })` — skip straight to A6 (test the auto-log UI in isolation)
+- `simulateFullBite()` — runs the whole t0→t4 sequence on a short delay to sanity-check A2-A6 end-to-end
+
+## Applied from `spectacles-522-portable-design`
+
+- `HandTracker` reads only SIK's confirmed-stable joints (`wrist`, `indexTip`)
+  and uses `WorldCameraFinderProvider` for the face anchor instead of a
+  manually-wired `@input` — one less thing to configure, and stable across
+  SIK 0.16.4-0.18.
+- `CameraSampler` and `HandTracker` wrap their device reads in try/catch so a
+  preview-without-hardware session degrades gracefully instead of throwing.
+- Fixed while reviewing against the checklist: `EatingEventDetector`'s
+  `faceProximityUnits` input was declared but never actually checked — the
+  `HAND_APPROACHING_FACE -> FOOD_AT_FACE` and `FOOD_AT_FACE` dwell logic now
+  gate on real hand-to-face distance (via `HandState.distanceToFace`), not
+  just elapsed time.
+
 ## Known TODOs / needs in-editor verification
 
 None of this has been compiled inside Lens Studio yet — grounded against
@@ -121,6 +148,21 @@ the public Scripting API docs, but a few spots are flagged in-file with
 - `TextureEncoding`: exact `Base64`/`CompressionQuality`/`EncodingType`
   global names for JPEG-encoding a texture before the HTTP POST.
 - `AutoLogDisplay`: exact `Text` component property path for fading opacity.
+- `HandTracker`: exact export path for `WorldCameraFinderProvider` in the
+  installed SIK 0.16.4, and whether `hand.wrist` is the correct joint name
+  (vs. `wristCenter` or similar) on the installed SIK version.
+
+## Status
+
+Not yet opened inside Lens Studio — the shared MCP connection is currently
+tied to a different active project (Phantom/OpticalDefenseSystem work by
+another agent on this machine; Lens Studio only supports one open project at
+a time). Everything above was authored file-first against the public
+Scripting API docs and the `spectacles-522-portable-design` skill, with no
+live compile yet. Next session with editor access: run `CompileWithLogsTool`,
+work through the TODO(verify) list above, then wire one root SceneObject +
+`DebugHarness` via the granular MCP tools (`CreateLensStudioSceneObject` →
+`CreateComponentFromPresetTool` → `SetLensStudioProperty`).
 
 ## Perf/battery posture (A1 tasks)
 

@@ -80,13 +80,24 @@ export class EatingEventDetector extends BaseScriptComponent {
       : this.latestHands.right;
   }
 
+  private prevDistanceToFace: number | null = null;
+
   private isApproachingFace(hand: HandState): boolean {
-    // Inward speed = component of velocity pointing toward the face anchor.
-    // Approximated here via closing speed: negative rate-of-change of distance.
-    // HandTracker doesn't expose distance-to-face directly to this module
-    // (kept decoupled), so we use velocity magnitude as a practical proxy —
-    // good enough combined with the FOOD_AT_FACE proximity check that follows.
-    return hand.velocity.length >= this.approachSpeedThreshold;
+    // Real closing speed: rate-of-change of actual hand-to-face distance
+    // (HandTracker now computes this directly via WorldCameraFinderProvider),
+    // not just raw velocity magnitude — a hand can move fast sideways without
+    // approaching the face at all.
+    if (this.prevDistanceToFace === null) {
+      this.prevDistanceToFace = hand.distanceToFace;
+      return false;
+    }
+    const closingSpeed = (this.prevDistanceToFace - hand.distanceToFace) / Math.max(getDeltaTime(), 1 / 240);
+    this.prevDistanceToFace = hand.distanceToFace;
+    return closingSpeed >= this.approachSpeedThreshold;
+  }
+
+  private isAtFace(hand: HandState): boolean {
+    return hand.distanceToFace <= this.faceProximityUnits;
   }
 
   private tick(): void {
@@ -125,12 +136,16 @@ export class EatingEventDetector extends BaseScriptComponent {
           break;
         }
         this.lastConditionTrueAtMs = now;
-        if (this.dwellMs() >= this.minDwellApproachingMs) this.enterState(EatingState.FOOD_AT_FACE);
+        // Only actually reaching the face counts — dwell time alone (the old
+        // bug here) let a hand that stalled mid-air falsely progress.
+        if (this.isAtFace(hand) && this.dwellMs() >= this.minDwellApproachingMs) {
+          this.enterState(EatingState.FOOD_AT_FACE);
+        }
         break;
       }
 
       case EatingState.FOOD_AT_FACE: {
-        if (!hand) {
+        if (!hand || !this.isAtFace(hand)) {
           this.resetIfStale(now, EatingState.HAND_APPROACHING_FACE);
           break;
         }

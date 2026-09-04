@@ -20,6 +20,8 @@ export interface HandState {
   indexTipPosition: vec3;
   /** Approximate world-space velocity (units/sec), smoothed. */
   velocity: vec3;
+  /** World-space distance from this hand's index tip to the face anchor. Infinity when !isTracked. */
+  distanceToFace: number;
   timestampMillis: number;
 }
 

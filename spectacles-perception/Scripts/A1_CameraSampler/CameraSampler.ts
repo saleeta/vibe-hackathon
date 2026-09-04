@@ -69,11 +69,19 @@ export class CameraSampler extends BaseScriptComponent {
   }
 
   private startLowResStream(): void {
-    const request = CameraModule.createCameraRequest();
-    request.cameraId = CameraModule.CameraId.Default_Color;
-    request.imageSmallerDimension = this.lowResSmallerDimension;
-    this.cameraTexture = this.cameraModule.requestCamera(request);
-    this.cameraTexture.control.onNewFrame.add((frame) => this.onNativeFrame(frame));
+    // Editor-preview fallback: webcam/preview camera behavior can differ from
+    // on-device — never let a startup failure here take down the rest of the
+    // perception pipeline (per spectacles-522-portable-design's "give every
+    // feature an isEditor() fallback" rule).
+    try {
+      const request = CameraModule.createCameraRequest();
+      request.cameraId = CameraModule.CameraId.Default_Color;
+      request.imageSmallerDimension = this.lowResSmallerDimension;
+      this.cameraTexture = this.cameraModule.requestCamera(request);
+      this.cameraTexture.control.onNewFrame.add((frame) => this.onNativeFrame(frame));
+    } catch (err) {
+      print(`[CameraSampler] Failed to start camera stream (expected in some editor-preview states): ${err}`);
+    }
   }
 
   private onNativeFrame(frame: CameraFrame): void {
