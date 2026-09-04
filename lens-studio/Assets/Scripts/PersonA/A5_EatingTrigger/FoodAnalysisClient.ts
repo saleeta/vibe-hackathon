@@ -12,7 +12,13 @@ export interface IFoodAnalysisClient {
 
 /**
  * Default implementation: POSTs a JPEG-encoded HQ frame + context to
- * Person B's backend, expects { name, grams, kcal } back.
+ * Person B's backend (`api/`'s `POST /v1/analyze` — see
+ * ../../../../../api/README.md), which runs its whole B1-B6 pipeline and
+ * responds with the flat { name, grams, kcal, confidence } shape plus the
+ * fuller nutrition/glycemic/confidence breakdown, mapped straight through
+ * to FoodAnalysisResult so a richer display isn't limited to just calories.
+ * Point `backendUrl` at that server's /v1/analyze endpoint, e.g.
+ * http://localhost:4002/v1/analyze during development.
  *
  * TODO(verify): InternetModule.fetch's exact request/response shape
  * against Lens Studio 5.15.4 (this follows the documented fetch(url, init)
@@ -57,6 +63,15 @@ export class HttpFoodAnalysisClient extends BaseScriptComponent implements IFood
       grams: json.grams,
       kcal: json.kcal,
       confidence: json.confidence,
+      proteinG: json.proteinG,
+      carbsG: json.carbsG,
+      fatG: json.fatG,
+      weightUncertaintyG: json.weightUncertaintyG,
+      glycemicLoad: json.glycemicLoad,
+      glycemicCategory: json.glycemicCategory,
+      foodConfidence: json.foodConfidence,
+      portionConfidence: json.portionConfidence,
+      items: json.items,
     };
   }
 }

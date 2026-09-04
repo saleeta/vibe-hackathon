@@ -5,6 +5,14 @@
  * session that opens and closes immediately — so a standalone test photo
  * and a real eating session produce a MealSummary the same way, from the
  * same source of truth.
+ *
+ * Also this repo's implementation of Person A's `IFoodAnalysisClient`
+ * backend contract (../../lens-studio/Assets/Scripts/PersonA/A5_EatingTrigger/FoodAnalysisClient.ts):
+ * `eatingEventContext`, when present, carries A4's real EatingEventPayload
+ * (food_object / confidence / timestampMillis) from a live Spectacles
+ * eating event — `detection_confidence` becomes B6's eatingConfidence
+ * input instead of the fallback used for a manually-uploaded test photo,
+ * and `food_hint` is passed to B1 as a disambiguation aid.
  */
 
 import { FoodRecognitionService } from "../../../lens-studio/Assets/Scripts/PersonB/FoodRecognitionService";
@@ -20,6 +28,14 @@ export interface AnalyzePlateImageDeps {
   nutritionClient: NutritionClient;
 }
 
+/** Present when this call came from Person A's live EatingTrigger (A5) rather than a manually-uploaded test photo. */
+export interface EatingEventContext {
+  foodHint?: string;
+  /** A4's confidence that this was genuinely an eating event — becomes B6's eatingConfidence. */
+  detectionConfidence?: number;
+  timestampMillis?: number;
+}
+
 export class NoFoodRecognizedError extends Error {
   constructor() {
     super("No food recognized in this image with enough confidence");
@@ -27,8 +43,12 @@ export class NoFoodRecognizedError extends Error {
   }
 }
 
-export async function analyzePlateImage(imageBase64: string, deps: AnalyzePlateImageDeps): Promise<MealSummary> {
-  const recognizedItems = await deps.foodRecognition.recognize(imageBase64);
+export async function analyzePlateImage(
+  imageBase64: string,
+  deps: AnalyzePlateImageDeps,
+  eventContext: EatingEventContext = {}
+): Promise<MealSummary> {
+  const recognizedItems = await deps.foodRecognition.recognize(imageBase64, undefined, eventContext.foodHint);
   if (recognizedItems.length === 0) {
     throw new NoFoodRecognizedError();
   }
@@ -51,7 +71,7 @@ export async function analyzePlateImage(imageBase64: string, deps: AnalyzePlateI
     };
   });
 
-  const timestampSec = Date.now() / 1000;
+  const timestampSec = eventContext.timestampMillis ? eventContext.timestampMillis / 1000 : Date.now() / 1000;
   let closedSession: EatingSession | null = null;
   const sessionManager = new EatingSessionManager((session) => {
     closedSession = session;
@@ -65,9 +85,11 @@ export async function analyzePlateImage(imageBase64: string, deps: AnalyzePlateI
   const mealItems = EatingSessionManager.summarizeByFood(session);
   const { totals, glycemicEstimate } = await deps.nutritionClient.meal(mealItems);
 
-  // A deliberately uploaded test photo is treated as a certain "eating event" (1.0) —
-  // there's no ambiguous hand-to-mouth detection to score here, unlike a live Spectacles frame.
-  const confidence = ConfidenceAggregator.forSession(session.items, 1);
+  // A live eating event carries A4's real confidence that this was genuinely
+  // an eating event; a manually-uploaded test photo has no such ambiguity —
+  // it's a deliberate upload, so treat it as certain (1.0).
+  const eatingConfidence = eventContext.detectionConfidence ?? 1;
+  const confidence = ConfidenceAggregator.forSession(session.items, eatingConfidence);
 
   return {
     sessionId: session.id,

@@ -16,6 +16,8 @@ import Anthropic from "@anthropic-ai/sdk";
 import { FoodClassifierBackend } from "../../../lens-studio/Assets/Scripts/PersonB/FoodRecognitionService";
 import { BoundingBox, FoodRegionDetection } from "../../../lens-studio/Assets/Scripts/PersonB/Types";
 
+const MAX_HINT_LENGTH = 100;
+
 const MODEL = "claude-sonnet-5";
 
 const SYSTEM_PROMPT = `You are the food-recognition stage of a calorie and nutrition tracker. Given a photo of food, identify every distinct food item visible (a single food, or several on a plate) and estimate each one's portion weight.
@@ -53,7 +55,7 @@ interface ClaudeFoodEntry {
 export class ClaudeVisionClassifier implements FoodClassifierBackend {
   constructor(private readonly apiKey: string | undefined) {}
 
-  async classify(imageBase64: string): Promise<FoodRegionDetection[]> {
+  async classify(imageBase64: string, _roiHint?: BoundingBox, foodHint?: string): Promise<FoodRegionDetection[]> {
     if (!this.apiKey) {
       throw new Error(
         "ANTHROPIC_API_KEY is not set. Set it in the environment before calling /v1/food/classify or /v1/analyze."
@@ -62,6 +64,15 @@ export class ClaudeVisionClassifier implements FoodClassifierBackend {
 
     const client = new Anthropic({ apiKey: this.apiKey });
     const { mediaType, data } = parseImageBase64(imageBase64);
+
+    // foodHint (e.g. Person A's on-device classifier's guess) is a hint to
+    // disambiguate with, never trusted blindly — the instruction below asks
+    // Claude to verify it against the image, not to just echo it back.
+    const userText = foodHint
+      ? `Identify the food in this image per the schema in your instructions. An upstream on-device classifier guessed this might be "${sanitizeHint(
+          foodHint
+        )}" — verify that against what you actually see rather than assuming it's correct.`
+      : "Identify the food in this image per the schema in your instructions.";
 
     const message = await client.messages.create({
       model: MODEL,
@@ -72,7 +83,7 @@ export class ClaudeVisionClassifier implements FoodClassifierBackend {
           role: "user",
           content: [
             { type: "image", source: { type: "base64", media_type: mediaType, data } },
-            { type: "text", text: "Identify the food in this image per the schema in your instructions." },
+            { type: "text", text: userText },
           ],
         },
       ],
@@ -139,4 +150,9 @@ function normalizeFoodName(name: string): string {
 
 function clamp01(v: number): number {
   return Math.max(0, Math.min(1, v ?? 0));
+}
+
+/** foodHint comes from an upstream classifier, not a trusted source — cap length before it goes into the prompt. */
+function sanitizeHint(hint: string): string {
+  return hint.slice(0, MAX_HINT_LENGTH).replace(/[\r\n]+/g, " ").trim();
 }

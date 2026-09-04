@@ -47,11 +47,49 @@ For the hand-geometry method (live Spectacles capture, not a flat photo):
 ```
 → `{ "food": "banana", "estimatedWeightG": ..., "uncertaintyG": ..., "confidence": ... }`
 
-### `POST /v1/analyze` — the one you actually want for testing photos
+### `POST /v1/analyze` — the one endpoint that does everything
+
+Also the concrete backend for Person A's `IFoodAnalysisClient` contract —
+`PersonA/A5_EatingTrigger/FoodAnalysisClient.ts`'s `HttpFoodAnalysisClient`
+calls exactly this endpoint with exactly this request shape when wired into
+a live Lens (point its `backendUrl` input here). `food_hint`,
+`detection_confidence`, and `timestamp_millis` are optional and only present
+when the call came from a real eating event rather than a manually-uploaded
+test photo:
+
 ```json
-{ "image_base64": "data:image/jpeg;base64,..." }
+{
+  "image_base64": "data:image/jpeg;base64,...",
+  "food_hint": "apple",
+  "detection_confidence": 0.91,
+  "timestamp_millis": 1735000000000
+}
 ```
-→ a full `MealSummary`: detected foods with weights, `totals` (kcal/protein/carbs/fat), `glycemicEstimate`, and `confidence`. This is what `../test-images/` batch-analyzes against — see that folder's README.
+
+→
+```json
+{
+  "name": "apple", "grams": 132, "kcal": 69, "confidence": 0.84,
+  "proteinG": 0.4, "carbsG": 18.2, "fatG": 0.3, "weightUncertaintyG": 59.4,
+  "glycemicLoad": 6.6, "glycemicCategory": "low",
+  "foodConfidence": 0.93, "portionConfidence": 0.7,
+
+  "sessionId": "session-...", "startedSec": 1735000000, "closedSec": 1735000000,
+  "items": [{ "food": "apple", "weightG": 132, "weightUncertaintyG": 59.4, "foodConfidence": 0.93, "portionConfidence": 0.7, "firstSeenSec": ..., "lastSeenSec": ..., "observationCount": 1 }],
+  "totals": { "kcal": 69, "proteinG": 0.4, "carbsG": 18.2, "fatG": 0.3 },
+  "confidence": { "eatingConfidence": 0.91, "foodConfidence": 0.93, "portionConfidence": 0.7, "overall": 0.84 },
+  "glycemicEstimate": { "totalGlycemicLoad": 6.6, "category": "low", "allFoodsMatched": true }
+}
+```
+
+The top-level flat fields (`name`/`grams`/`kcal`/`confidence`/...) are what
+`HttpFoodAnalysisClient` reads into `FoodAnalysisResult` — `name`/`grams`
+flatten to the heaviest detected item / summed weight across all items, in
+case the frame showed more than one food. The nested `items`/`totals`/
+`confidence`/`glycemicEstimate` (the full `MealSummary`) are there for
+anything that wants the complete breakdown, including
+`../test-images/`'s batch script, which reads those nested fields — see
+that folder's README, and `../docs/ARCHITECTURE.md` for the full contract.
 
 Errors are JSON (`{ "error": "..." }`); `422` means no food was recognized in
 the image, `500` covers everything else (including a missing
@@ -59,12 +97,12 @@ the image, `500` covers everything else (including a missing
 at server startup, so `/health` and `/v1/portion/estimate` keep working
 without a key).
 
-## Why a flat test photo uses a different portion-estimation path
+## Why `/v1/analyze` always uses the vision-direct portion method
 
-Live Spectacles capture has a hand in frame to use as a scale reference
-(`PortionEstimator.estimate`, the geometric method). A standalone plate photo
-usually doesn't, so `/v1/analyze` uses the vision model's own direct weight
-estimate instead (`PortionEstimator.fromVisionEstimate`) — the same
-`estimated_weight_g` + confidence shape from the original B2 spec. Both paths
-produce the same `PortionEstimate` shape downstream; see
-`../docs/ARCHITECTURE.md`.
+`PortionEstimator.estimate` (the hand-geometry method,
+`/v1/portion/estimate`) needs camera-space pixel hand geometry. Person A's
+`HandTracker` currently reports world-space hand positions instead (via
+SIK), so nothing feeds that method live yet — `/v1/analyze` always uses the
+vision model's own direct weight estimate instead
+(`PortionEstimator.fromVisionEstimate`), for both a live Spectacles capture
+and a standalone test photo. See "Known gaps" in `../docs/ARCHITECTURE.md`.

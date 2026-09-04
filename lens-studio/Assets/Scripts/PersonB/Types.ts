@@ -1,29 +1,15 @@
 /**
  * Shared data contracts for Person B's pipeline (food recognition -> portion ->
  * nutrition -> session aggregation -> confidence). Plain data only, no Lens
- * Studio SDK types here, so this file — and everything else in PersonB/ except
- * PersonBController.ts — is portable and unit-testable outside Lens Studio.
+ * Studio SDK types here, so every file in this folder is portable and
+ * unit-testable outside Lens Studio.
+ *
+ * Person A's real eating-event contract lives in their own package
+ * (`PersonA/Core/PerceptionTypes.ts`'s `EatingEventPayload`/
+ * `FoodAnalysisResult`, and `PersonA/A5_EatingTrigger/FoodAnalysisClient.ts`'s
+ * `IFoodAnalysisClient`) — Person B's `api/` server is what implements that
+ * contract's backend side. See docs/ARCHITECTURE.md for how the two meet.
  */
-
-/** What Person A hands off when their eating-event detector fires. */
-export interface EatingEventInput {
-  /** Timestamp in seconds, e.g. Date.now() / 1000 or getTime()-based. */
-  timestampSec: number;
-  /** Confidence that this is actually a hand-to-mouth eating event (from A). */
-  eatingConfidence: number;
-  /** Encoded still frame (base64) captured at the moment of detection. */
-  imageBase64: string;
-  /**
-   * A's rough hand-proximity region — a crop/attention hint for the food
-   * classifier, not used directly for portion math. B1 does its own
-   * per-food localization (see FoodRegionDetection) because a single frame
-   * can show several foods at once (a plate), each needing its own box for
-   * B2's portion estimate.
-   */
-  roiHint?: BoundingBox;
-  /** Hand geometry A observed at detection time — used as a scale reference. */
-  hand: HandObservation;
-}
 
 export interface BoundingBox {
   x: number;

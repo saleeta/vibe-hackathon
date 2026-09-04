@@ -1,8 +1,8 @@
 /**
- * Lens-side client for the nutrition-service (B3). Transport is injected
- * (see PersonBController for the Lens Studio InternetModule wiring) so this
- * class has no Lens Studio dependency and can be unit tested / demoed in
- * plain Node against a local nutrition-service instance.
+ * Client for the nutrition-service (B3). Transport is injected — used
+ * server-side by api/ (over plain Node fetch) and by examples/demo.ts —
+ * so this class has no Lens Studio dependency and can be unit tested /
+ * demoed in plain Node against a local nutrition-service instance.
  */
 
 import { GlycemicEstimate, ScaledNutrition } from "./Types";

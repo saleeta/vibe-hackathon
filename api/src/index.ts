@@ -12,6 +12,7 @@ import { PortionEstimator } from "../../lens-studio/Assets/Scripts/PersonB/Porti
 import { NutritionClient } from "../../lens-studio/Assets/Scripts/PersonB/NutritionClient";
 import { ClaudeVisionClassifier } from "./vision/ClaudeVisionClassifier";
 import { analyzePlateImage, NoFoodRecognizedError } from "./pipeline/analyzePlateImage";
+import { MealSummary } from "../../lens-studio/Assets/Scripts/PersonB/Types";
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4002;
 const NUTRITION_SERVICE_URL = process.env.NUTRITION_SERVICE_URL ?? "http://localhost:4001";
@@ -73,20 +74,67 @@ app.post("/v1/portion/estimate", (req: Request, res: Response) => {
  * (vision-direct portion, since a standalone photo has no hand to use as a
  * scale reference) -> B4/B5 (one-shot session) -> B3 (nutrition-service) ->
  * B6 (confidence).
+ *
+ * This is also the concrete backend for Person A's `IFoodAnalysisClient`
+ * contract (PersonA/A5_EatingTrigger/FoodAnalysisClient.ts's
+ * HttpFoodAnalysisClient calls exactly this endpoint with exactly this
+ * request shape) — `food_hint`/`detection_confidence`/`timestamp_millis`
+ * are A4's real EatingEventPayload fields when this came from a live
+ * Spectacles eating event, absent for a manually-uploaded test photo.
+ * The response is a superset of both: the flat name/grams/kcal/confidence
+ * shape HttpFoodAnalysisClient reads, the fuller nutrition/glycemic/
+ * confidence fields FoodAnalysisResult now also carries, AND the full
+ * MealSummary (items/totals/confidence/glycemicEstimate) underneath.
  */
 app.post("/v1/analyze", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { image_base64 } = req.body ?? {};
+    const { image_base64, food_hint, detection_confidence, timestamp_millis } = req.body ?? {};
     if (typeof image_base64 !== "string") {
       res.status(400).json({ error: "expected { image_base64: string }" });
       return;
     }
-    const summary = await analyzePlateImage(image_base64, { foodRecognition, portionEstimator, nutritionClient });
-    res.json(summary);
+    const summary = await analyzePlateImage(
+      image_base64,
+      { foodRecognition, portionEstimator, nutritionClient },
+      {
+        foodHint: typeof food_hint === "string" ? food_hint : undefined,
+        detectionConfidence: typeof detection_confidence === "number" ? detection_confidence : undefined,
+        timestampMillis: typeof timestamp_millis === "number" ? timestamp_millis : undefined,
+      }
+    );
+    res.json({ ...summary, ...flattenForFoodAnalysisResult(summary) });
   } catch (err) {
     next(err);
   }
 });
+
+/**
+ * Person A's IFoodAnalysisClient reads a flat { name, grams, kcal,
+ * confidence, ... } shape (see PersonA/Core/PerceptionTypes.ts's
+ * FoodAnalysisResult) — derives it from the full MealSummary so callers
+ * that only care about "the one thing that was eaten" don't have to reach
+ * into items[]/totals{}, while items/totals/confidence/glycemicEstimate
+ * stay available underneath for anything that wants the full breakdown.
+ * The heaviest item stands in for "name" since a live eating event is
+ * almost always one food, but a frame can still show more than one.
+ */
+function flattenForFoodAnalysisResult(summary: MealSummary) {
+  const primaryItem = [...summary.items].sort((a, b) => b.weightG - a.weightG)[0];
+  return {
+    name: primaryItem?.food ?? "unknown",
+    grams: summary.items.reduce((sum, i) => sum + i.weightG, 0),
+    kcal: summary.totals.kcal,
+    confidence: summary.confidence.overall,
+    proteinG: summary.totals.proteinG,
+    carbsG: summary.totals.carbsG,
+    fatG: summary.totals.fatG,
+    weightUncertaintyG: primaryItem?.weightUncertaintyG,
+    glycemicLoad: summary.glycemicEstimate?.totalGlycemicLoad,
+    glycemicCategory: summary.glycemicEstimate?.category,
+    foodConfidence: summary.confidence.foodConfidence,
+    portionConfidence: summary.confidence.portionConfidence,
+  };
+}
 
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   if (err instanceof NoFoodRecognizedError) {

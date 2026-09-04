@@ -70,10 +70,34 @@ export interface EatingEventPayload {
   timestampMillis: number;
 }
 
-/** What Person B's backend is expected to hand back after analyzing the HQ frame. */
+/**
+ * What Person B's backend hands back after analyzing the HQ frame — one
+ * eating event, one food (the largest/primary one if the frame showed more
+ * than one, e.g. a visible plate). `name`/`grams`/`kcal`/`confidence` are
+ * the original MVP shape AutoLogDisplay (A6) reads; everything else is the
+ * fuller nutrition breakdown Person B's pipeline actually computes, added
+ * so a richer display (e.g. PersonB/NutritionHUD.ts) can subscribe to the
+ * same `onFoodAnalyzed` signal without a second round-trip.
+ */
 export interface FoodAnalysisResult {
   name: string;
   grams: number;
   kcal: number;
   confidence?: number;
+
+  proteinG?: number;
+  carbsG?: number;
+  fatG?: number;
+  weightUncertaintyG?: number;
+
+  /** Estimated from food composition only — NOT a measured blood glucose reading. See docs/COMPLIANCE.md. */
+  glycemicLoad?: number;
+  glycemicCategory?: 'low' | 'medium' | 'high';
+
+  /** B6 breakdown, in case a display wants more than the single overall `confidence` above. */
+  foodConfidence?: number;
+  portionConfidence?: number;
+
+  /** Every food Person B detected in the frame, in case more than one was present (e.g. a plate). */
+  items?: { food: string; weightG: number }[];
 }

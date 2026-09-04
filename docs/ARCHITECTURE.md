@@ -1,170 +1,210 @@
-# Person B — architecture
+# Architecture — Person A + Person B, merged
 
-Person A owns eating-event detection (hand + food proximity in frame) and
-calls into Person B's pipeline once per detected frame:
+Person A's perception module (`lens-studio/Assets/Scripts/PersonA/`, A1-A6)
+detects "food is in the hand, and it's genuinely being eaten" and captures a
+high-quality frame. Person B's pipeline (`PersonB/`, `api/`, `nutrition-service/`)
+turns that frame into calories, macros, and an estimated glycemic load, shown
+back on screen. The two meet at exactly one seam.
 
-```
-Person A: "eating event detected" ─┐
-                                    ▼
-                     PersonBController.onEatingEventDetected(input)
-                                    │
-                    ┌───────────────┼────────────────┐
-                    ▼               ▼                ▼
-              B1 Food          B2 Portion       (hand geometry,
-              recognition      estimation        depth, from A)
-              (1 region per                          │
-               food; a plate                          │
-               is N regions)                          │
-                    │               │                  │
-                    └───────┬───────┴──────────────────┘
-                            ▼
-         B4/B5 EatingSessionManager.addPlateObservation()
-         (all foods from one frame committed as one atomic
-          group; dedup keyed PER FOOD, so a plate seen again
-          on the next frame doesn't inflate any of its items;
-          session stays open across bites/plates, closes
-          after inactivity)
-                            │
-                     session closes
-                            ▼
-              B3 nutrition-service  (food + grams -> macros
-                                      + estimated glycemic load,
-                                      summed over the session)
-                            │
-                            ▼
-              B6 ConfidenceAggregator -> MealSummary
-              (kcal/macros + estimated glycemic load;
-               a real measured glucose reading, if a
-               sensor is ever integrated, attaches
-               separately — see COMPLIANCE.md)
+## The seam: `IFoodAnalysisClient`
+
+Person A already designed this integration point before B's real code
+existed (`PersonA/A5_EatingTrigger/FoodAnalysisClient.ts`):
+
+```ts
+export interface IFoodAnalysisClient {
+  analyze(frame: Texture, context: EatingEventPayload): Promise<FoodAnalysisResult>;
+}
 ```
 
-### Plate vs. sequential bites
+`HttpFoodAnalysisClient` (A's own implementation of it) POSTs a JPEG-encoded
+frame plus context to a configurable `backendUrl` and expects
+`{ name, grams, kcal, confidence, ... }` back. That request/response shape
+turned out to match `api/`'s `POST /v1/analyze` almost exactly — so **no new
+Lens-side networking code was needed**. Point `HttpFoodAnalysisClient.backendUrl`
+at `api/`'s `/v1/analyze` endpoint and the two modules are wired.
 
-A single frame can show one food (a bite in the hand) or several at once (a
-plate — rice, chicken, broccoli, sauce). `PersonBController` doesn't treat
-these differently: every region B1 detects in a frame becomes one
-observation, and all of them are submitted together via
-`EatingSessionManager.addPlateObservation(timestampSec, items)` — one atomic
-group at that timestamp. That group is safe to submit again on the very next
-frame if the plate is still in view, because `EatingSessionManager` tracks
-"in progress" state *per food name*, not per frame — so repeat looks at the
-same plate update the existing running-average estimates for rice/chicken/
-broccoli/sauce individually instead of appending duplicate line items. One
-session, closed once, produces one set of logged calories no matter how many
-frames or how many simultaneous foods went into it.
+```
+                    Person A (A1-A6)                              Person B
+┌──────────────────────────────────────────────────┐   ┌──────────────────────────────┐
+│ CameraSampler → HandTracker → FoodInHandClassifier │   │                              │
+│      → EatingEventDetector (state machine)         │   │                              │
+│      → onEatingEvent { food_object, confidence,    │   │                              │
+│                         timestampMillis }           │   │                              │
+│      → EatingTrigger: captureHighQuality()          │   │                              │
+│      → HttpFoodAnalysisClient.analyze(frame, ctx)  │──▶│  api/  POST /v1/analyze      │
+│           POST { image_base64, food_hint,           │   │   B1 → B2 → B4/B5 → B3 → B6  │
+│                  detection_confidence,               │   │  (see below)                 │
+│                  timestamp_millis }                  │◀──│  returns FoodAnalysisResult  │
+│      → onFoodAnalyzed.invoke(result)                │   │  (flat + full MealSummary)   │
+└──────────────────────────────────────────────────┘   └──────────────────────────────┘
+                    │
+                    ▼
+      PersonB/NutritionHUD.ts subscribes to onFoodAnalyzed
+      and shows food + kcal + macros + glycemic load + confidence
+      (A's own AutoLogDisplay also listens to the same signal —
+       run one, the other, or both; see "The visual" below)
+```
 
-(An earlier version of this tracked only a single "most recently active"
-item across the whole session, which meant a plate's foods could interfere
-with each other's dedup — e.g. looking at chicken again right after broccoli
-was seen would compare against broccoli's state instead of chicken's, and
-double-log the chicken. The per-food-keyed tracking above is what fixes
-that.)
+## What `/v1/analyze` does with A's request
 
-### Glycemic load estimate (extends B3)
+`api/src/pipeline/analyzePlateImage.ts` runs the same B1-B6 chain whether the
+frame came from A's live `EatingTrigger` or a manually-uploaded test photo
+(`test-images/`) — the only thing that differs is `EatingEventContext`:
 
-`nutrition-service` also carries a glycemic index (GI) per food and returns
-an estimated glycemic load (`GI × carbs / 100`, summed over the session) from
-`/nutrition/meal`, surfaced on `MealSummary.glycemicEstimate`. This is
-**derived entirely from food composition** — there is no way to measure
-actual blood glucose from a photo. `Types.ts` also defines
-`MeasuredGlucoseReading` as a separate, unfilled field on `MealSummary` for
-if/when a real CGM or fingerstick integration exists — the two are kept
-deliberately distinct so an estimate is never mistaken for, or silently
-merged into, a real reading. See `COMPLIANCE.md` for why this distinction is
-load-bearing for a diabetes-adjacent feature.
+- `food_hint` (A4's classified `food_object`) is passed to B1 as a
+  disambiguation hint — the vision prompt is told to *verify* it against the
+  image, not trust it blindly (`ClaudeVisionClassifier.ts`).
+- `detection_confidence` (A4's confidence this was genuinely an eating
+  event) becomes B6's `eatingConfidence` input to `ConfidenceAggregator`,
+  instead of the `1.0` used for a deliberately-uploaded test photo where
+  there's no such ambiguity. (This closes what used to be a `TODO` here —
+  before Person A's real event payload existed, this pipeline had no such
+  field to thread through.)
+- `timestamp_millis` becomes the eating-session timestamp.
 
-## Two ways to feed the pipeline
+B2's portion estimate uses the **vision-direct** method
+(`PortionEstimator.fromVisionEstimate`) for both the live and test-photo
+paths — A's `HandTracker` reports world-space hand positions (via SIK), not
+the camera-space pixel geometry `PortionEstimator.estimate`'s hand-scale
+method needs, so that geometric method currently has no live data feeding
+it. It's still implemented and reachable (`POST /v1/portion/estimate`) for
+whenever pixel-space hand geometry becomes available — see "Known gaps"
+below.
 
-Live Spectacles capture (via `PersonBController`) is one path in. There's a
-second: `api/`'s `POST /v1/analyze`, for testing against arbitrary food
-photos (see `test-images/`) or for any non-Lens client. Both paths run the
-same B1-B6 modules — they differ only in where the frame comes from and,
-because of that, which B2 method applies:
+## The response: one shape, two readers
 
-|  | Live Spectacles (`PersonBController`) | Standalone photo (`api` `/v1/analyze`) |
-|---|---|---|
-| Frame source | A's hand-to-mouth capture | uploaded image file |
-| B2 method | hand geometry (`PortionEstimator.estimate`) | vision-direct (`PortionEstimator.fromVisionEstimate`) |
-| Why | a hand is in frame to use as a scale reference | a flat plate photo usually has no hand/depth data at all |
-| Session | real multi-frame session, closes on inactivity | one-shot session: opens and closes immediately around a single image |
+`/v1/analyze`'s response is a superset:
 
-The vision-direct path asks the classifier backend for a weight estimate
-directly (`estimated_weight_g` + its own confidence — the alternate B2 shape
-from the original spec), the same way a commercial food-scanning app reasons
-about portion size from plate size and typical servings, rather than
-computing it from geometry. `api/src/vision/ClaudeVisionClassifier.ts` is the
-concrete implementation, calling Claude's vision API; it's one interchangeable
-`FoodClassifierBackend` (`FoodRecognitionService.ts`) — swap in a different
-vision model/service without touching B2-B6.
+```
+{
+  // flat — what HttpFoodAnalysisClient reads into FoodAnalysisResult
+  name, grams, kcal, confidence,
+  proteinG, carbsG, fatG, weightUncertaintyG,
+  glycemicLoad, glycemicCategory,
+  foodConfidence, portionConfidence,
+  items: [{ food, weightG }, ...],   // every food detected, not just the primary one
 
-## Every stage is also an HTTP call
+  // nested — the full MealSummary, for anything that wants more detail
+  sessionId, startedSec, closedSec,
+  items: SessionFoodItem[], totals, confidence: {...}, glycemicEstimate: {...}
+}
+```
 
-`api/` puts a REST endpoint in front of B1, B2 (hand-geometry method), and
-the composed pipeline; `nutrition-service/` does the same for B3. Nothing
-downstream needs to import TypeScript to use this pipeline — see
-`api/README.md` and `nutrition-service/README.md` for the full endpoint
-list and request/response shapes. B4/B5/B6 aren't separately networked
-(session state doesn't fit a single stateless call, and a one-shot photo
-doesn't need multi-call session semantics) but stay fully modular as
-independently importable/testable TS modules either way.
+`name`/`grams` flatten to the heaviest detected item / the summed weight
+across all items — a live eating event is almost always one food, but a
+frame can still show more than one (see B4/B5 below), so `items[]` is there
+for anything that wants the full list.
+
+## The visual
+
+Two options subscribe to the same `PerceptionEvents.onFoodAnalyzed` signal
+(per `PersonA/README.md`'s own documented "Main-app-owns-the-UI" pattern):
+
+- **`PersonA/A6_LoggingUX/AutoLogDisplay.ts`** — A's minimal one-liner,
+  `"Apple · ~95 kcal"`, fades out automatically. Unmodified except that
+  `FoodAnalysisResult` now carries more fields it doesn't read.
+- **`PersonB/NutritionHUD.ts`** — the fuller nutrition card: headline
+  (food + kcal), a macros line (protein/carbs/fat), a glycemic-load line
+  (explicitly labeled *estimated*, never "blood sugar" — see
+  `COMPLIANCE.md`), and a confidence line. Same no-button, auto-fade UX as
+  AutoLogDisplay, just more `Text` inputs. Wire whichever one(s) the Scene
+  needs; disable `AutoLogDisplay`'s SceneObject if only the fuller card
+  should show.
+
+## B4/B5: one plate, one eating session, no double-counting
+
+A single frame can show one food (a bite) or several (a plate — rice,
+chicken, broccoli, sauce). `EatingSessionManager.addPlateObservation`
+commits every food B1 detects in a frame as one atomic group, and tracks
+"in progress" state **per food name** — so a plate seen again on a later
+frame updates the running estimate for each food individually instead of
+appending duplicate line items. The session stays open across bites/plates
+and closes after inactivity, producing exactly one set of logged calories
+per real eating session. See `EatingSessionManager.ts`'s header comment for
+the full reasoning (including a past bug this design specifically fixes: a
+single "most recently active item" tracker let a plate's foods interfere
+with each other's dedup).
+
+## Glycemic load estimate (extends B3)
+
+`nutrition-service` carries a glycemic index (GI) per food and returns an
+estimated glycemic load (`GI × carbs / 100`, summed over the session),
+surfaced as `glycemicLoad`/`glycemicCategory` (flat) and `glycemicEstimate`
+(nested). **Derived entirely from food composition — not a measured blood
+glucose value.** `FoodAnalysisResult` and `MealSummary` both keep this
+field separate from any future real sensor reading; see `COMPLIANCE.md` for
+why that distinction is load-bearing for a diabetes-adjacent feature.
 
 ## Why the code is split the way it is
 
-`lens-studio/Assets/Scripts/PersonB/` has one Lens-Studio-coupled file
-(`PersonBController.ts`) and five plain-TypeScript files (`Types.ts`,
-`FoodRecognitionService.ts`, `PortionEstimator.ts`, `NutritionClient.ts`,
-`EatingSessionManager.ts`, `ConfidenceAggregator.ts`). The plain files take no
-dependency on Lens Studio SDK globals — they're driven purely by data in,
-data out — so they can be exercised in a real Node process (see
-`examples/demo.ts`) without opening Lens Studio or wearing hardware. That's
-the fastest debug loop for the session/dedup logic (B4/B5), which is the part
-most worth getting right before wiring up real hardware.
+`lens-studio/Assets/Scripts/` has two independent packages that only touch
+each other through `PersonA/Core/PerceptionEvents.ts`'s signal bus:
 
-`nutrition-service/` is B3, and is deliberately a standalone HTTP service, not
-Lens code — per the spec ("build this as a separate service"), and because a
-food nutrition database doesn't belong bundled into a Spectacles Lens build.
+- **`PersonA/`** — perception (A1-A6). Every script talks to its neighbors
+  only through signals, never direct references — see `PersonA/README.md`
+  for the full state machine and event contract.
+- **`PersonB/`** — five plain-TypeScript files (`Types.ts`,
+  `FoodRecognitionService.ts`, `PortionEstimator.ts`, `NutritionClient.ts`,
+  `EatingSessionManager.ts`, `ConfidenceAggregator.ts`, `NutritionHUD.ts`).
+  All but `NutritionHUD.ts` take no dependency on Lens Studio SDK globals —
+  driven purely by data in, data out — so they run in plain Node (see
+  `examples/demo.ts`) without opening Lens Studio or wearing hardware.
+  `NutritionHUD.ts` is the one Lens-coupled file, and it's a leaf: nothing
+  else in `PersonB/` depends on it.
+
+Person B doesn't have its own "controller" Lens component anymore — A's
+`EatingTrigger` + `HttpFoodAnalysisClient` (pointed at `api/`) already own
+that role, per the seam above. An earlier version of this repo had a
+speculative `PersonBController.ts` built before A's real contract existed;
+it's been removed now that the real integration is simpler than what it
+guessed at.
+
+`nutrition-service/` is B3, and is deliberately a standalone HTTP service,
+not Lens code — per the spec ("build this as a separate service"), and
+because a food nutrition database doesn't belong bundled into a Spectacles
+Lens build. `api/` is B1/B2/B6 (+ the composed pipeline) as their own HTTP
+service for the same reason vision/compute-heavy work shouldn't run
+on-device, and because it's what both `HttpFoodAnalysisClient` and
+`test-images/`'s batch script call.
 
 ## Lens Studio SDK notes (verify against your installed version)
 
 - **HTTP calls**: as of Lens Studio 5.9, `fetch`/`performHttpRequest` live on
   `InternetModule`, not the older `RemoteServiceModule`
   ([Internet Access docs](https://developers.snap.com/spectacles/about-spectacles-features/apis/internet-access)).
-  `PersonBController.postJsonViaInternetModule` is the one place that calls
-  this — check it against whatever Lens Studio version the project is opened
-  in, since this API has moved before.
-- **Images over the network**: Snap's own guidance is to prefer Remote
-  Assets authored at Lens-build time rather than fetching images dynamically.
-  That guidance is about *pulling* remote image assets into the Lens (e.g.
-  textures); it doesn't apply to *sending* a captured frame out to a
-  classifier, which is what B1 does — but keep an eye on it if the
-  vision backend design changes.
+  Both `HttpFoodAnalysisClient` (A) and this doc assume that surface; verify
+  against whatever Lens Studio version the project is actually opened in.
 - **Remote Service Gateway**: Snap also offers a
   [Remote Service Gateway](https://developers.snap.com/spectacles/about-spectacles-features/apis/remoteservice-gateway)
   for calling specific hosted AI APIs from a Lens without managing your own
-  proxy/auth. Worth evaluating as the food-classifier backend instead of a
-  fully custom endpoint, depending on which vision model the team picks.
+  proxy/auth — worth evaluating as an alternative to `api/` if it covers
+  Claude's vision API directly.
+- Several `PersonA/` files carry their own `TODO(verify)` markers for exact
+  Lens Studio 5.15.4 API surface (texture encoding, `MLComponent` I/O, Text
+  opacity property path) — `NutritionHUD.ts` inherits the same Text-opacity
+  uncertainty from `AutoLogDisplay.ts`. None of this has been compiled
+  inside the actual Lens Studio editor yet.
 
-## Known MVP simplifications (documented on purpose, not hidden)
+## Known gaps (documented on purpose, not hidden)
 
-- **B2 portion estimation**'s hand-geometry method is a geometric heuristic
-  (bounding-box footprint × per-food shape/density model, scaled using the
-  hand as a ruler), not a learned depth model — see the comment block at the
-  top of `PortionEstimator.ts`. The vision-direct method (used for standalone
-  photos) is only as good as the classifier's own visual-portion reasoning,
-  with no independent way to verify it; both paths carry an explicit
-  uncertainty band rather than presenting a guess as exact.
-- **B4/B5 bite tracking** merges consecutive same-food observations (per food
-  name) within a short gap (default 6s) into one item, and closes the
-  session after a longer inactivity gap (default 3 min). Two *non-contiguous*
-  helpings of the same food (e.g. going back for more chicken) become two
-  session items, then get summed together for display/totals via
-  `EatingSessionManager.summarizeByFood()`. Both timeouts are constructor
-  parameters, not hardcoded, so they're easy to tune against real usage data.
+- **B2's hand-geometry portion method has no live data feeding it.** A's
+  `HandTracker` reports world-space positions (via SIK), not the
+  camera-space pixel width `PortionEstimator.estimate` needs. The
+  vision-direct method (`PortionEstimator.fromVisionEstimate`) is what
+  actually runs for both live and test-photo paths right now. Converting
+  A's world-space hand geometry to camera-space pixel width (via camera
+  projection) would let the live path use the more-grounded geometric
+  method — worth doing once real accuracy numbers from either method exist
+  to compare.
+- **B4/B5 bite tracking** merges consecutive same-food observations (per
+  food name) within a short gap (default 6s) into one item, and closes the
+  session after a longer inactivity gap (default 3 min). Both are
+  constructor parameters, easy to tune against real usage data.
 - **B6 confidence** combines eating/food/portion confidence with a weighted
   geometric mean (not a plain average) specifically so one badly-estimated
   stage drags the overall score down instead of being diluted out — see the
   comment in `ConfidenceAggregator.ts`.
-- Person A does not yet pass a per-observation `eatingConfidence` through to
-  session close; `PersonBController.onSessionClosed` currently defaults it to
-  `1` with a `TODO` marking exactly where to wire the real value through.
+- **Nothing here has run inside the real Lens Studio editor yet** — both
+  `PersonA/`'s and `PersonB/NutritionHUD.ts`'s `TODO(verify)` markers need a
+  pass once opened in the actual editor version being targeted.

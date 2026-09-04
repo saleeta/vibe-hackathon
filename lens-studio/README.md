@@ -1,28 +1,49 @@
-# Lens Studio project — Person B
+# Lens Studio project
 
-This folder holds the Lens-side scripts. `Assets/Scripts/PersonB/` is a
-regular Lens Studio TypeScript folder — open (or create) a Lens Studio
-project rooted here and it will pick these files up.
+`Assets/Scripts/` holds both halves of the Lens: `PersonA/` (perception —
+detecting an eating event) and `PersonB/` (the nutrition HUD). Open (or
+create) a Lens Studio project rooted here and it will pick these files up as
+one project.
 
-## Wiring into the Scene (do this in the Lens Studio GUI)
+## Wiring into the Scene
 
-1. Add a Scene Object with a `PersonBController` script component
-   (`Assets/Scripts/PersonB/PersonBController.ts`) attached.
-2. Set `FOOD_CLASSIFIER_ENDPOINT` and `NUTRITION_SERVICE_BASE_URL` at the top
-   of `PersonBController.ts` to your deployed endpoints (see
-   `nutrition-service/README.md` for standing up B3).
-3. Confirm the project's capabilities include internet access
-   (`InternetModule`) — Lens Studio will flag this if it's missing.
-4. Have Person A's eating-detection script call
-   `personBController.onEatingEventDetected(input)` with an `EatingEventInput`
-   (see `Assets/Scripts/PersonB/Types.ts`) once per detected eating frame. A
-   only needs to send the frame plus an optional rough ROI hint — B1 itself
-   detects and localizes every food in the frame, so a plate with several
-   foods in it is handled automatically as one call, not one call per food.
-5. Put any HUD elements that display session/food/kcal on the camera layer
-   that feeds the Capture Target — see `../docs/SCREEN_RECORDING.md`.
+Person A's own `Assets/Scripts/PersonA/README.md` has the full per-component
+`@input` table (camera module, hands, thresholds, etc.) — read that first.
+The Person-B-specific pieces:
+
+1. Stand up `nutrition-service` and `api` (see their READMEs at the repo
+   root) — `api` needs a real `ANTHROPIC_API_KEY` to actually run vision.
+2. On the `EatingTrigger` SceneObject's `foodAnalysisClientComponent` input,
+   attach an `HttpFoodAnalysisClient` (not `MockFoodAnalysisClient`) and set
+   its `backendUrl` to `api`'s `/v1/analyze` endpoint (e.g.
+   `http://localhost:4002/v1/analyze` during development; confirm the
+   project's capabilities include internet access and the host is
+   allow-listed in Project Settings — Lens Studio will flag this if missing).
+3. Add a SceneObject with `PersonB/NutritionHUD.ts` attached. Give it a
+   `headlineText` (required — a `Text` component) and, optionally,
+   `macrosText`/`glycemicText`/`confidenceText` for the fuller card; any you
+   leave unset are simply not shown.
+4. Decide whether `PersonA/A6_LoggingUX/AutoLogDisplay` (the compact
+   "Apple · ~95 kcal" line) runs alongside `NutritionHUD` or gets disabled —
+   both listen to the same `PerceptionEvents.onFoodAnalyzed` signal, so
+   either or both can be active.
+5. Put every HUD element (from either A6 or NutritionHUD) on the camera
+   layer that feeds the Capture Target so it shows up in Spectacles
+   recordings — see `../docs/SCREEN_RECORDING.md`.
+
+No Person-B script is a required entry point Person A calls into — A's own
+`EatingTrigger` + `HttpFoodAnalysisClient` already own that role once step 2
+above is done. See `../docs/ARCHITECTURE.md` for the full request/response
+contract between the two.
 
 ## Files
+
+### `PersonA/` — perception (A1-A6)
+
+See `PersonA/README.md` for the full breakdown (event bus, state machine,
+per-component inputs). None of it depends on `PersonB/`.
+
+### `PersonB/` — nutrition pipeline + HUD
 
 | File | Task | Lens Studio SDK dependency |
 |---|---|---|
@@ -32,7 +53,10 @@ project rooted here and it will pick these files up.
 | `NutritionClient.ts` | B3 client for `nutrition-service` | none (HTTP transport injected) |
 | `EatingSessionManager.ts` | B4 meal aggregation + B5 duplicate detection | none |
 | `ConfidenceAggregator.ts` | B6 confidence/uncertainty | none |
-| `PersonBController.ts` | wiring + Lens Studio glue | yes — `InternetModule`, `BaseScriptComponent`, update tick |
+| `NutritionHUD.ts` | the visual — subscribes to `PersonA`'s `onFoodAnalyzed` | yes — `Text`, `BaseScriptComponent` |
 
-Everything except `PersonBController.ts` is plain TypeScript and is exercised
-directly (no mocking of Lens Studio needed) by `../examples/demo.ts`.
+`Types.ts` through `ConfidenceAggregator.ts` are plain TypeScript with no
+Lens Studio dependency and are exercised directly (no mocking needed) by
+`../examples/demo.ts` and by `../api/`, which runs the same B1-B6 chain as a
+standalone HTTP service (`api/README.md`). `NutritionHUD.ts` is the only
+Lens-coupled file, and nothing else in `PersonB/` depends on it.

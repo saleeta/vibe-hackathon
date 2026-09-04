@@ -3,16 +3,19 @@
 Not a legal review — practical points to keep the pipeline reviewable and
 shippable on Spectacles.
 
-- **Camera frames leave the device.** B1 sends a captured still frame to an
-  external classifier endpoint over HTTPS (`InternetModule`). That's a
-  network capability that must be declared/requested per Lens Studio's
-  project capability requirements for internet access — check the project's
-  capability settings in Lens Studio match what `PersonBController` actually
-  calls. Don't silently add a second, undeclared network destination later
-  without updating that.
-- **Minimize what leaves the device.** Only the single frame needed for
-  recognition is sent, not a continuous video stream — B1/B2 both operate on
-  one still image per detected eating event, not a live feed to the backend.
+- **Camera frames leave the device.** Person A's `HttpFoodAnalysisClient`
+  sends a captured HQ frame to `api/`'s `/v1/analyze` endpoint over HTTPS
+  (`InternetModule`). That's a network capability that must be
+  declared/requested per Lens Studio's project capability requirements for
+  internet access — check the project's capability settings match the one
+  `backendUrl` actually configured. Don't silently add a second, undeclared
+  network destination later without updating that.
+- **Minimize what leaves the device.** Only the single HQ frame needed for
+  recognition is sent, not a continuous video stream — enforced on Person
+  A's side by `EatingTrigger` (one `analyze()` call per confirmed
+  `EATING_EVENT`, a `busy` guard against overlap, and A4's `cooldownMs`
+  against re-triggering the same bite) and on Person B's side by B1/B2 both
+  operating on that one still image, never a live feed.
 - **No always-on recording implied.** Nothing in this pipeline starts a
   Spectacles hardware recording; see `SCREEN_RECORDING.md` — recording stays
   user-initiated via the physical button, which is the compliant default for
@@ -58,9 +61,11 @@ shippable on Spectacles.
   Anthropic's API terms/data-handling policy before sending anything
   sensitive, and see the "minimize what leaves the device" point above — the
   same one-frame-per-event principle should hold for any real deployment.
-- **No PII persistence built here.** This pipeline as written doesn't persist
-  images or eating history anywhere — `PersonBController.onSessionClosed` has
-  a `TODO` for wherever session summaries get sent next. If that becomes a
-  server-side store of a user's eating history, that's health-adjacent
-  personal data and should get its own privacy/retention review before
-  shipping — flagging now so it isn't missed later.
+- **No PII persistence built here.** This pipeline as written doesn't
+  persist images or eating history anywhere — `api/`'s `/v1/analyze`
+  computes and returns a result per request with nothing written to disk or
+  a database, and the Lens-side display (`AutoLogDisplay`/`NutritionHUD`)
+  only shows-then-fades. If a server-side store of a user's eating history
+  gets added later, that's health-adjacent personal data and should get its
+  own privacy/retention review before shipping — flagging now so it isn't
+  missed later.
