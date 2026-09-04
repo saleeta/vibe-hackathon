@@ -5,9 +5,14 @@
  * script, including the main app / Person B's integration code.
  */
 
-export enum HandSide {
-  Left = 'left',
-  Right = 'right',
+// Matches SIK's own HandType exactly ('left' | 'right' string union, not a
+// TS enum — SIK's getHand()/BaseHand.handType are typed this way, verified
+// against the installed SpectaclesInteractionKit.lspkg v0.17.2 source), so
+// HandSide.Left/Right values pass straight into SIK calls with no cast.
+export type HandSide = 'left' | 'right'
+export const HandSide = {
+  Left: 'left' as HandSide,
+  Right: 'right' as HandSide,
 }
 
 /** Snapshot of one tracked hand at a point in time. */

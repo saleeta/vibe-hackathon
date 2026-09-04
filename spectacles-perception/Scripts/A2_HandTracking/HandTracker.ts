@@ -1,9 +1,11 @@
 import { SIK } from 'SpectaclesInteractionKit.lspkg/SIK';
-// TODO(verify): confirm exact export path for WorldCameraFinderProvider in the
-// installed SIK 0.16.4 — per spectacles-522-portable-design, it's part of SIK's
-// stable core surface across 0.16.4-0.18, used here to auto-derive a "face"
-// anchor (the wearer's own head/camera pose) with zero manual scene wiring.
-import { WorldCameraFinderProvider } from 'SpectaclesInteractionKit.lspkg/Providers/CameraProvider/WorldCameraFinderProvider';
+// Verified against installed SIK v0.17.2 source: WorldCameraFinderProvider is
+// a DEFAULT export (`export default class WorldCameraFinderProvider`), and
+// its constructor throws unless the main Camera's SceneObject has a
+// DeviceTracking component present (mode doesn't matter for the check) —
+// added one to Camera Object in-editor to satisfy this.
+import WorldCameraFinderProvider from 'SpectaclesInteractionKit.lspkg/Providers/CameraProvider/WorldCameraFinderProvider';
+import { BaseHand } from 'SpectaclesInteractionKit.lspkg/Providers/HandInputData/BaseHand';
 import { PerceptionEvents } from '../Core/PerceptionEvents';
 import { HandSide, HandState, HandsSnapshot } from '../Core/PerceptionTypes';
 
@@ -15,10 +17,10 @@ import { HandSide, HandState, HandsSnapshot } from '../Core/PerceptionTypes';
  * pipeline (A3/A4) doesn't depend on SIK types directly — if the hand
  * tracking source ever changes, only this file needs to change.
  *
- * Sticks to SIK's stable core surface only (HandInputData wrist/indexTip,
- * WorldCameraFinderProvider) per spectacles-522-portable-design — these are
- * confirmed unchanged across SIK 0.16.4-0.18, so this file needs no rework
- * regardless of which SIK version the main app ends up on.
+ * Sticks to SIK's stable core surface only (HandInputData, BaseHand's
+ * getPalmCenter()/indexTip/isTracked(), WorldCameraFinderProvider) per
+ * spectacles-522-portable-design — verified present, unchanged, in the
+ * installed SIK v0.17.2 source.
  *
  * Emits PerceptionEvents.onHandsUpdated every update tick with both hands'
  * tracked state, including a smoothed velocity estimate (used by A4 to
@@ -39,13 +41,17 @@ export class HandTracker extends BaseScriptComponent {
   private leftHand = this.handInputData.getHand(HandSide.Left);
   private rightHand = this.handInputData.getHand(HandSide.Right);
 
+  // Plain string-literal keys (not computed [HandSide.Left]) — HandSide.Left's
+  // type is the HandSide union itself, not the narrowed literal 'left', so a
+  // computed key here would widen the object to a string index signature and
+  // fail the Record<HandSide, vec3> check.
   private prevPositions: Record<HandSide, vec3> = {
-    [HandSide.Left]: vec3.zero(),
-    [HandSide.Right]: vec3.zero(),
+    left: vec3.zero(),
+    right: vec3.zero(),
   };
   private smoothedVelocity: Record<HandSide, vec3> = {
-    [HandSide.Left]: vec3.zero(),
-    [HandSide.Right]: vec3.zero(),
+    left: vec3.zero(),
+    right: vec3.zero(),
   };
 
   onAwake(): void {
@@ -69,11 +75,10 @@ export class HandTracker extends BaseScriptComponent {
     PerceptionEvents.onHandsUpdated.invoke({ left, right });
   }
 
-  private buildHandState(side: HandSide, hand: any, dt: number): HandState {
-    const isTracked: boolean = typeof hand.isTracked === 'function' ? hand.isTracked() : !!hand.isTracked;
+  private buildHandState(side: HandSide, hand: BaseHand, dt: number): HandState {
     const timestampMillis = getTime() * 1000;
 
-    if (!isTracked) {
+    if (!hand.isTracked()) {
       return {
         side,
         isTracked: false,
@@ -85,12 +90,12 @@ export class HandTracker extends BaseScriptComponent {
       };
     }
 
-    // `wrist` + `indexTip` are the two joints spectacles-522-portable-design
-    // calls out as SIK's confirmed-stable read surface. `wrist` stands in for
-    // "hand anchor position" here (PerceptionTypes keeps the field named
-    // `palmPosition` for readability elsewhere in the pipeline).
-    const palmPosition: vec3 = hand.wrist?.position ?? vec3.zero();
-    const indexTipPosition: vec3 = hand.indexTip?.position ?? palmPosition;
+    // getPalmCenter() is BaseHand's own documented "hand position" helper
+    // (used internally by SIK for hand-overlap checks — exactly our
+    // hand/object intersection use case); wrist.position is the fallback
+    // for the rare frame where it returns null.
+    const palmPosition: vec3 = hand.getPalmCenter() ?? hand.wrist.position;
+    const indexTipPosition: vec3 = hand.indexTip.position;
 
     const instantVelocity = palmPosition.sub(this.prevPositions[side]).uniformScale(1 / dt);
     const smoothed = this.smoothedVelocity[side].uniformScale(1 - this.velocitySmoothing).add(

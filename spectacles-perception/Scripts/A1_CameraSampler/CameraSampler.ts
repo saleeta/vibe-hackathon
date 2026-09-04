@@ -2,39 +2,35 @@ import { PerceptionEvents } from '../Core/PerceptionEvents';
 import { RingBuffer } from '../Core/RingBuffer';
 import { PerformanceProfiler } from './PerformanceProfiler';
 
+// Built-in modules (any type named *Module) can be grabbed via require()
+// with the "LensStudio:" prefix — no need to add a CameraModule asset to
+// the project or wire an @input for it at all (per Lens Studio's Script
+// Modules > Native Modules docs). One less manual Inspector connection.
+const nativeCameraModule: CameraModule = require('LensStudio:CameraModule');
+
 /**
  * A1 — Continuous camera sampling.
  *
  *   camera -> sample frames -> run detection
  *
  * Design:
- *  - Runs ONE continuous CameraModule stream (Spectacles hardware exposes
- *    one active color-camera pipeline at a time — re-requesting a second
- *    stream at a different resolution is not something to rely on).
- *  - The stream itself is requested at `lowResSmallerDimension` — cheap,
- *    native-downscaled frames, good enough for detection.
- *  - A software gate (`sampleIntervalMs`, derived from `targetFPS`) throttles
- *    how often we actually *process* a frame, independent of the sensor's
- *    native delivery rate. This is the "10-15 FPS perception" budget.
- *  - `captureHighQuality()` re-issues the CameraRequest at
- *    `hqSmallerDimension` for a single frame, then drops back to the cheap
- *    resolution. This is only ever called by A5, on a confirmed eating
- *    event — never on every frame.
+ *  - Runs ONE continuous CameraModule.requestCamera stream at
+ *    `lowResSmallerDimension` — cheap, native-downscaled frames, good enough
+ *    for detection. A software gate (`sampleIntervalMs`, derived from
+ *    `targetFPS`) throttles how often we actually *process* a frame,
+ *    independent of the sensor's native delivery rate — the "10-15 FPS
+ *    perception" budget from the spec.
+ *  - `captureHighQuality()` uses the dedicated one-shot
+ *    `CameraModule.requestImage()` API for the HQ frame — this does NOT
+ *    disturb the ongoing low-res stream at all (confirmed via
+ *    QueryLensStudioRag against the installed Lens Studio 5.15.4 docs),
+ *    unlike re-requesting the stream at a different resolution.
  *  - Self-throttles further (drops target FPS) if the perception loop is
  *    consistently over its per-frame time budget, so this doesn't become
  *    a battery hog on-device.
- *
- * TODO(verify in-editor): confirm CameraRequest re-configuration behavior
- * (switching imageSmallerDimension on an already-running stream) against
- * the installed Lens Studio 5.15.4 CameraModule — fall back to tearing
- * down/recreating the texture request if hot-swapping resolution isn't
- * supported.
  */
 @component
 export class CameraSampler extends BaseScriptComponent {
-  @input
-  cameraModule: CameraModule;
-
   @input
   @hint('Perception loop rate. 10-15 FPS is the spec target.')
   targetFPS: number = 12;
@@ -44,8 +40,12 @@ export class CameraSampler extends BaseScriptComponent {
   lowResSmallerDimension: number = 320;
 
   @input
-  @hint('Capture resolution (long edge) used only for the one-off HQ frame sent to the backend.')
-  hqSmallerDimension: number = 1280;
+  @hint('Capture width (px) used only for the one-off HQ frame sent to the backend.')
+  hqWidth: number = 1280;
+
+  @input
+  @hint('Capture height (px) used only for the one-off HQ frame sent to the backend.')
+  hqHeight: number = 960;
 
   @input
   @hint('How many recent sample timestamps to keep for FPS/perf bookkeeping.')
@@ -60,7 +60,6 @@ export class CameraSampler extends BaseScriptComponent {
   private msSinceLastSample: number = 0;
   private profiler = new PerformanceProfiler(30);
   private sampleHistory = new RingBuffer<{ timestampMillis: number }>(this.historySize);
-  private hqCapturePending: ((tex: Texture) => void) | null = null;
 
   onAwake(): void {
     this.sampleIntervalMs = 1000 / Math.max(1, this.targetFPS);
@@ -77,24 +76,15 @@ export class CameraSampler extends BaseScriptComponent {
       const request = CameraModule.createCameraRequest();
       request.cameraId = CameraModule.CameraId.Default_Color;
       request.imageSmallerDimension = this.lowResSmallerDimension;
-      this.cameraTexture = this.cameraModule.requestCamera(request);
-      this.cameraTexture.control.onNewFrame.add((frame) => this.onNativeFrame(frame));
+      this.cameraTexture = nativeCameraModule.requestCamera(request);
     } catch (err) {
       print(`[CameraSampler] Failed to start camera stream (expected in some editor-preview states): ${err}`);
     }
   }
 
-  private onNativeFrame(frame: CameraFrame): void {
-    // Native sensor delivery can exceed our processing budget — gate here.
-    if (this.hqCapturePending) {
-      // We're mid HQ-capture: this frame is the (higher-res) one we asked for.
-      const cb = this.hqCapturePending;
-      this.hqCapturePending = null;
-      cb(this.cameraTexture);
-      this.dropBackToLowRes();
-      return;
-    }
-
+  private onUpdate(): void {
+    if (!this.cameraTexture) return;
+    this.msSinceLastSample += getDeltaTime() * 1000;
     if (this.msSinceLastSample < this.sampleIntervalMs) return;
     this.msSinceLastSample = 0;
 
@@ -107,10 +97,6 @@ export class CameraSampler extends BaseScriptComponent {
     this.maybeThrottle();
   }
 
-  private onUpdate(): void {
-    this.msSinceLastSample += getDeltaTime() * 1000;
-  }
-
   private maybeThrottle(): void {
     if (this.targetFPS <= 4) return;
     if (this.profiler.isOverBudget(this.perFrameBudgetMillis)) {
@@ -121,27 +107,15 @@ export class CameraSampler extends BaseScriptComponent {
   }
 
   /**
-   * A5 calls this on a confirmed eating event. Resolves with a single
-   * higher-resolution frame, then the stream drops back to the cheap
-   * perception resolution automatically.
+   * A5 calls this on a confirmed eating event. One-shot HQ capture via
+   * CameraModule.requestImage() — doesn't touch the ongoing low-res stream.
+   * ImageRequest has no cameraId (always the default camera) and takes an
+   * explicit `resolution` vec2 rather than imageSmallerDimension.
    */
   captureHighQuality(): Promise<Texture> {
-    return new Promise((resolve) => {
-      this.hqCapturePending = resolve;
-      const request = CameraModule.createCameraRequest();
-      request.cameraId = CameraModule.CameraId.Default_Color;
-      request.imageSmallerDimension = this.hqSmallerDimension;
-      this.cameraTexture = this.cameraModule.requestCamera(request);
-      this.cameraTexture.control.onNewFrame.add((frame) => this.onNativeFrame(frame));
-    });
-  }
-
-  private dropBackToLowRes(): void {
-    const request = CameraModule.createCameraRequest();
-    request.cameraId = CameraModule.CameraId.Default_Color;
-    request.imageSmallerDimension = this.lowResSmallerDimension;
-    this.cameraTexture = this.cameraModule.requestCamera(request);
-    this.cameraTexture.control.onNewFrame.add((frame) => this.onNativeFrame(frame));
+    const request = CameraModule.createImageRequest();
+    request.resolution = new vec2(this.hqWidth, this.hqHeight);
+    return nativeCameraModule.requestImage(request).then((imageFrame) => imageFrame.texture);
   }
 
   getCurrentFPS(): number {

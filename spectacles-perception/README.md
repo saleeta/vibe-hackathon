@@ -154,15 +154,29 @@ the public Scripting API docs, but a few spots are flagged in-file with
 
 ## Status
 
-Not yet opened inside Lens Studio — the shared MCP connection is currently
-tied to a different active project (Phantom/OpticalDefenseSystem work by
-another agent on this machine; Lens Studio only supports one open project at
-a time). Everything above was authored file-first against the public
-Scripting API docs and the `spectacles-522-portable-design` skill, with no
-live compile yet. Next session with editor access: run `CompileWithLogsTool`,
-work through the TODO(verify) list above, then wire one root SceneObject +
-`DebugHarness` via the granular MCP tools (`CreateLensStudioSceneObject` →
-`CreateComponentFromPresetTool` → `SetLensStudioProperty`).
+**Live-verified in Lens Studio 5.15.4.** Opened in a fresh project (SIK
+v0.17.2 installed), all 17 scripts compile clean, wired into the scene as
+one root `PerceptionModule` object (all A1-A6 components + `DebugHarness`)
+plus a `HUD Canvas → HUD Label` child carrying the `AutoLogDisplay` glass
+tile. Ran in Lens Studio's desktop preview with zero runtime errors — SIK
+hand tracking initialized, `CameraSampler`'s editor-only fallback correctly
+caught "API not available on the simulated platform" instead of crashing.
+
+Fixed against the real compiler/APIs along the way (see file comments for
+detail): `WorldCameraFinderProvider` needs a `DeviceTracking` component on
+Camera; `ImageRequest` uses `resolution`/`crop`, not
+`cameraId`/`imageSmallerDimension`; `TextureProvider` has no `onNewFrame`
+(switched to throttled `UpdateEvent` polling); Lens Studio allows only one
+`@component` per file (`MockFoodAnalysisClient` split out); `CameraModule`/
+`InternetModule` load via `require('LensStudio:...')` with zero asset
+wiring; `Text.backgroundSettings`/`dropshadowSettings` (lowercase "s") give
+`AutoLogDisplay` its glass-tile look with no separate material/texture.
+
+**Not yet done:** a physical Spectacles is connected over ADB and detected
+by Lens Studio, but pushing a build to real hardware is a manual step in
+the Lens Studio UI (Send/device-preview button) — no MCP tool exposes that
+action. Next session with device access: push to device, confirm real
+camera + hand tracking, then run `DebugHarness.simulateFullBite()` on-device.
 
 ## Perf/battery posture (A1 tasks)
 

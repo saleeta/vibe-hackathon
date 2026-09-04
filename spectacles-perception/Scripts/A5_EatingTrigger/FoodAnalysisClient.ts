@@ -1,6 +1,10 @@
 import { EatingEventPayload, FoodAnalysisResult } from '../Core/PerceptionTypes';
 import { encodeTextureToBase64Jpeg } from './TextureEncoding';
 
+// See CameraSampler.ts for why: built-in modules load via require(), no
+// @input wiring needed.
+const nativeInternetModule: InternetModule = require('LensStudio:InternetModule');
+
 /**
  * Swappable seam to Person B's food-analysis backend. EatingTrigger (A5)
  * only depends on this interface — point it at a mock during development,
@@ -18,12 +22,13 @@ export interface IFoodAnalysisClient {
  * against Lens Studio 5.15.4 (this follows the documented fetch(url, init)
  * -> Response pattern with .ok/.json()). Requires "Internet Access" +
  * the backend host allow-listed in Project Settings.
+ *
+ * (MockFoodAnalysisClient lives in its own file — Lens Studio only allows
+ * one @component class per .ts file, confirmed via tsc: "Cannot create
+ * component for class MockFoodAnalysisClient" when both shared this file.)
  */
 @component
 export class HttpFoodAnalysisClient extends BaseScriptComponent implements IFoodAnalysisClient {
-  @input
-  internetModule: InternetModule;
-
   @input
   @hint('Person B\'s food-analysis endpoint, e.g. https://api.example.com/analyze')
   backendUrl: string = '';
@@ -36,7 +41,7 @@ export class HttpFoodAnalysisClient extends BaseScriptComponent implements IFood
 
     const imageBase64 = await encodeTextureToBase64Jpeg(frame);
 
-    const response = await this.internetModule.fetch(this.backendUrl, {
+    const response = await nativeInternetModule.fetch(this.backendUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -58,19 +63,5 @@ export class HttpFoodAnalysisClient extends BaseScriptComponent implements IFood
       kcal: json.kcal,
       confidence: json.confidence,
     };
-  }
-}
-
-/** In-memory mock for developing/demoing A5/A6 before Person B's backend exists. */
-@component
-export class MockFoodAnalysisClient extends BaseScriptComponent implements IFoodAnalysisClient {
-  @input mockKcalPerFoodObject: string = ''; // e.g. JSON string '{"apple":95,"burger":550}' set in Inspector
-
-  async analyze(_frame: Texture, context: EatingEventPayload): Promise<FoodAnalysisResult> {
-    const table: Record<string, number> = this.mockKcalPerFoodObject
-      ? JSON.parse(this.mockKcalPerFoodObject)
-      : {};
-    const kcal = table[context.food_object] ?? 100;
-    return { name: context.food_object, grams: 150, kcal, confidence: context.confidence };
   }
 }
