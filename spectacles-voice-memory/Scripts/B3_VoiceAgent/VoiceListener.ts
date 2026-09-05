@@ -113,7 +113,9 @@ export class VoiceListener extends BaseScriptComponent {
     if (objectClass) {
       VoiceMemoryEvents.onVoiceIntent.invoke({ type: 'locate_object', objectClass, rawText: text });
     } else {
-      print(`[VoiceListener] Heard "${text}" — no recognized locate-object intent.`);
+      // Doesn't match the fast local pattern — hand it to the open-ended
+      // LLM fallback (OpenEndedQAClient) rather than dropping it.
+      VoiceMemoryEvents.onOpenEndedQuery.invoke({ rawText: text });
     }
   }
 }

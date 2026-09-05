@@ -37,6 +37,9 @@ class VoiceMemoryEventBus {
 
   /** Orchestrator output: the lookup result for a voice intent — B4 (UI) and B3 (speech) both listen here. */
   readonly onLocateObjectResult = new Signal<LocateObjectResult>();
+
+  /** B3 output: a finished utterance that didn't match the local locate-object pattern — routed to the open-ended LLM fallback. */
+  readonly onOpenEndedQuery = new Signal<{ rawText: string }>();
 }
 
 export const VoiceMemoryEvents = new VoiceMemoryEventBus();

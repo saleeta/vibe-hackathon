@@ -1,4 +1,0 @@
-name: voice-agent-backend
-memory_mb: 256
-port: 3000
-ai: true
