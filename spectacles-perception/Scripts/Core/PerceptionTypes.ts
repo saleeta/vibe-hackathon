@@ -77,10 +77,25 @@ export interface EatingEventPayload {
   timestampMillis: number;
 }
 
-/** What Person B's backend is expected to hand back after analyzing the HQ frame. */
+/**
+ * What the food-analysis backend hands back after analyzing the HQ frame.
+ * Only `name`/`grams`/`kcal` are required — AutoLogDisplay only reads those.
+ * Everything else is optional and populated by richer backends (e.g.
+ * GeminiFoodAnalysisClient) for a fuller macro/glycemic breakdown.
+ */
 export interface FoodAnalysisResult {
   name: string;
   grams: number;
   kcal: number;
   confidence?: number;
+  proteinG?: number;
+  carbsG?: number;
+  fatG?: number;
+  weightUncertaintyG?: number;
+  glycemicLoad?: number;
+  glycemicCategory?: 'low' | 'medium' | 'high';
+  foodConfidence?: number;
+  portionConfidence?: number;
+  /** Per-food breakdown when more than one item was recognized in the frame (e.g. a plate). */
+  items?: Array<{ food: string; weightG: number; kcal: number; proteinG?: number; carbsG?: number; fatG?: number }>;
 }
