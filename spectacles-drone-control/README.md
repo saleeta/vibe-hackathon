@@ -80,6 +80,35 @@ same hand Flow B uses for placing the home anchor. Disable whichever
 flow(s) you're not demoing that moment — same `enabled`-checkbox discipline
 as A vs. B above.
 
+## Left/right/up/down, alternate flow: "pinch and drag" — `PinchDragController`
+
+```
+Right hand pinch, then move the hand -> drone moves the same direction,
+                                          one fixed step per real hand
+                                          travel distance
+Release the pinch                     -> stops; pinch again to resume
+                                          from wherever the hand is now
+```
+
+Simpler interaction than `DirectionalHandController` above for a quick
+demo: grab control with a pinch, drag, the drone follows. Same fixed-step
+philosophy as everything else in this module (not continuous joystick
+control) — each threshold-crossing of real hand travel fires one `go`
+command, then re-arms from the new hand position so continued dragging
+keeps firing further steps.
+
+Uses the RIGHT hand's pinch. Doesn't collide with takeoff/land (an open
+hand vs. a pinch are different hand shapes), but **does** collide with
+anything else using right-hand pinch — `WaypointSelector` (marker
+selection) and `AnchorDestinationController` (destination placement).
+Disable those when demoing this flow, same `enabled`-checkbox discipline
+used everywhere else in this module for overlapping gestures.
+
+Left/right/up/down here are world-space, same documented simplification
+as `DirectionalHandController` (see that section above) — compared
+against wherever the pinch itself started/last reset, not the wearer's
+facing direction.
+
 ## Shared takeoff/land/emergency vocabulary (gesture flows)
 
 ```
@@ -118,6 +147,20 @@ deliberately not guessed here (see this project's own established rule:
 never trust an unverified Lens Studio API assumption). Revisit if this
 becomes a real problem.
 
+## Recommended minimal demo wiring (pinch-and-drag)
+
+For a small, low-collision-risk demo: enable only `HandCommandController`
+(takeoff/land) + `PinchDragController` (movement). Disable
+`WaypointSelector`, `AnchorDestinationController`, `DirectionalHandController`,
+and `DroneVoiceListener` — all either use right-hand pinch too (would
+collide with `PinchDragController`) or aren't needed for this scope.
+
+```
+Right hand raised above head, held -> takeoff
+Right hand pinch, then drag        -> move left/right/up/down
+Right hand lowered below head, held -> land
+```
+
 ## Why there's a separate `drone-bridge/` folder at the repo root
 
 **Confirmed against Lens Studio's own docs: Spectacles has no raw UDP socket
@@ -139,7 +182,8 @@ Scripts/
                                 AnchorDestinationController.ts (Flow B)
                                 TelloGoVector.ts (Tello's real x/y/z constraint, used by both flows)
   B2_GestureCommands/          open-hand-height / fist-pose detection -> takeoff/land/emergency
-                                DirectionalHandController.ts -> left/right/up/down (left hand)
+                                DirectionalHandController.ts -> left/right/up/down (left hand, hold-pose flow)
+                                PinchDragController.ts -> left/right/up/down (right hand, pinch-and-drag flow)
   B3_DroneBridge/               WebSocket client to drone-bridge
   B4_StatusUI/                  always-visible glass-tile status line (last action + battery)
   B5_VoiceControl/              DroneVoiceListener.ts + DroneVoiceResponder.ts (Flow B5)
@@ -152,7 +196,7 @@ One root `DroneControlModule` object holding, alongside each other:
 `WaypointSelector` (`waypoint1/2/3` -> the 3 marker objects, Flow A),
 `AnchorModule` + `AnchorDestinationController` (`anchorModule` -> the
 `AnchorModule` above, Flow B), `HandCommandController`,
-`DirectionalHandController`, `DroneBridgeClient`
+`DirectionalHandController`, `PinchDragController`, `DroneBridgeClient`
 (`bridgeUrl` -> your bridge's address), `DebugDroneHarness`,
 `DroneVoiceListener` (`bridgeClient` -> `DroneBridgeClient` above),
 `DroneVoiceResponder` (`voiceAudio` -> an `AudioComponent` on the same

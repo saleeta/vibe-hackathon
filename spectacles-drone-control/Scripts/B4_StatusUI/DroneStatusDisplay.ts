@@ -47,8 +47,33 @@ export class DroneStatusDisplay extends BaseScriptComponent {
   }
 
   private onCommand(cmd: DroneCommand): void {
-    this.lastAction = cmd.type === 'goto' ? 'flying to destination' : cmd.type;
+    this.lastAction = cmd.type === 'goto' ? this.describeGoto(cmd) : cmd.type;
     this.render();
+  }
+
+  /**
+   * A clear direction word instead of generic "flying to destination" —
+   * matters for a demo whose whole point is showing the drone follow a
+   * specific gesture (see PinchDragController/DirectionalHandController,
+   * which each only ever set one nonzero axis at a time). Falls back to
+   * "flying" for anything with more than one axis set (e.g. a diagonal
+   * waypoint or an arbitrary DebugDroneHarness.simulateFlyToDestination()
+   * call) rather than guessing a combined label.
+   */
+  private describeGoto(cmd: DroneCommand): string {
+    const x = cmd.x ?? 0;
+    const y = cmd.y ?? 0;
+    const z = cmd.z ?? 0;
+    const nonzeroAxes = [x, y, z].filter((v) => v !== 0).length;
+    if (nonzeroAxes !== 1) return 'flying';
+
+    // Tello's go-vector convention (TelloGoVector.ts): x = forward(+)/back(-), y = left(+)/right(-), z = up(+)/down(-).
+    if (z > 0) return 'moving up';
+    if (z < 0) return 'moving down';
+    if (y > 0) return 'moving left';
+    if (y < 0) return 'moving right';
+    if (x > 0) return 'moving forward';
+    return 'moving back';
   }
 
   private onStatus(msg: DroneStatusMessage): void {
