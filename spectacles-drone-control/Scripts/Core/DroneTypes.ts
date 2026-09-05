@@ -25,6 +25,25 @@ export interface DroneStatusMessage {
   /** Parsed telemetry, for 'state' (only the fields the bridge chose to forward). */
   batteryPercent?: number;
   heightCm?: number;
+  /**
+   * B5 (voice control) — a short spoken confirmation for whatever just
+   * happened, templated server-side by the bridge (not from the LLM
+   * directly, to avoid hallucinated confirmations). Only present when this
+   * status came from a voice command; gesture-triggered commands leave it
+   * unset.
+   */
+  spokenText?: string;
+}
+
+/**
+ * B5 — sent instead of a DroneCommand when the wearer speaks a command.
+ * The bridge (not the Lens) interprets the raw text into an actual
+ * DroneCommand via an LLM call — see drone-bridge/server.js and its
+ * README for the prompt and the (deliberately small) command grammar.
+ */
+export interface VoiceCommandMessage {
+  type: 'voice_command';
+  text: string;
 }
 
 export type HandSide = 'left' | 'right';

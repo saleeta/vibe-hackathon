@@ -1,5 +1,5 @@
 import { DroneEvents } from '../Core/DroneEvents';
-import { DroneCommand, DroneStatusMessage } from '../Core/DroneTypes';
+import { DroneCommand, DroneStatusMessage, VoiceCommandMessage } from '../Core/DroneTypes';
 
 // Built-in module via require() — no @input asset wiring needed.
 const nativeInternetModule: InternetModule = require('LensStudio:InternetModule');
@@ -57,5 +57,19 @@ export class DroneBridgeClient extends BaseScriptComponent {
       return;
     }
     this.socket.send(JSON.stringify(command));
+  }
+
+  /**
+   * B5 (voice control) — sends the raw spoken transcript to the bridge
+   * instead of a resolved DroneCommand. The bridge, not this file, calls
+   * an LLM to turn it into an actual command — see drone-bridge/server.js.
+   */
+  sendVoiceCommand(text: string): void {
+    if (!this.socket) {
+      print('[DroneBridgeClient] Not connected — dropping voice command.');
+      return;
+    }
+    const message: VoiceCommandMessage = { type: 'voice_command', text };
+    this.socket.send(JSON.stringify(message));
   }
 }

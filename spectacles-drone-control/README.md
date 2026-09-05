@@ -53,7 +53,34 @@ the Spatial Anchors package's real `AnchorSession.createWorldAnchor()`. More
 flexible, but carries more unverified risk — see "What's real vs. what's a
 documented limitation" below.
 
-## Shared takeoff/land/emergency vocabulary (both flows)
+## Flow B5 (optional, layered on top): natural-language voice control
+
+```
+LEFT hand pinch, HELD  -> listening (release to send)
+"take off" / "land" / "fly forward one meter" / "go left a bit" /
+"what's the battery" -> spoken to the drone-bridge relay, which calls an
+                        LLM (Groq) to turn the transcript into an actual
+                        command, then speaks a confirmation back
+```
+
+This is the third, independent way to drive the drone (on top of Flow A
+and Flow B above) — see `drone-bridge/README.md` for the full setup
+(`GROQ_API_KEY` env var, the exact prompt/grammar, and why `emergency` is
+deliberately excluded from what voice can ever trigger). Files:
+`DroneVoiceListener.ts` (push-to-talk ASR, ships the raw transcript — no
+NLU on-device), `DroneVoiceResponder.ts` (speaks `spokenText` from any
+bridge response, using the same "Sasha" TTS setup as
+`spectacles-voice-memory`). Both fully standalone — neither imports
+`spectacles-voice-memory`'s equivalents, even though the proven patterns
+(push-to-talk via `GestureModule` pinch events, `AsrModule`/
+`TextToSpeechModule` usage) are copied from there.
+
+**Gesture collision note:** this uses LEFT-hand pinch for push-to-talk,
+same hand Flow B uses for placing the home anchor. Disable whichever
+flow(s) you're not demoing that moment — same `enabled`-checkbox discipline
+as A vs. B above.
+
+## Shared takeoff/land/emergency vocabulary (gesture flows)
 
 ```
 Right hand open, raised above head, held   -> takeoff
@@ -62,7 +89,8 @@ Both hands closed into fists               -> emergency stop
 ```
 
 Deliberately **discrete gestures, not continuous joystick control** — see
-"What's a V2, not built" below.
+"What's a V2, not built" below. `emergency` is also the one action voice
+control can never reach, by design (see Flow B5 above).
 
 ## Why there's a separate `drone-bridge/` folder at the repo root
 
@@ -80,13 +108,14 @@ is not optional, for either flow above.
 
 ```
 Scripts/
-  Core/                       DroneCommand/DroneStatusMessage types + event bus
+  Core/                       DroneCommand/DroneStatusMessage/VoiceCommandMessage types + event bus
   B1_SpatialDestination/       WaypointMarker.ts + WaypointSelector.ts (Flow A)
                                 AnchorDestinationController.ts (Flow B)
                                 TelloGoVector.ts (Tello's real x/y/z constraint, used by both flows)
   B2_GestureCommands/          open-hand-height / fist-pose detection -> takeoff/land/emergency
   B3_DroneBridge/               WebSocket client to drone-bridge
   B4_StatusUI/                  always-visible glass-tile status line (last action + battery)
+  B5_VoiceControl/              DroneVoiceListener.ts + DroneVoiceResponder.ts (Flow B5)
   DebugDroneHarness.ts          exercise B2-B4 without a live drone
 ```
 
@@ -96,11 +125,13 @@ One root `DroneControlModule` object holding, alongside each other:
 `WaypointSelector` (`waypoint1/2/3` -> the 3 marker objects, Flow A),
 `AnchorModule` + `AnchorDestinationController` (`anchorModule` -> the
 `AnchorModule` above, Flow B), `HandCommandController`, `DroneBridgeClient`
-(`bridgeUrl` -> your bridge's address), `DebugDroneHarness`. A sibling
-`Waypoint Markers` object holds the 3 marker children (`Waypoint Left`,
-`Waypoint Forward`, `Waypoint Right`), each `Text` + `WaypointMarker`. A
-separate `Drone HUD Canvas` -> `Drone Status Label` object carries
-`DroneStatusDisplay` (`statusText`).
+(`bridgeUrl` -> your bridge's address), `DebugDroneHarness`,
+`DroneVoiceListener` (`bridgeClient` -> `DroneBridgeClient` above),
+`DroneVoiceResponder` (`voiceAudio` -> an `AudioComponent` on the same
+object). A sibling `Waypoint Markers` object holds the 3 marker children
+(`Waypoint Left`, `Waypoint Forward`, `Waypoint Right`), each `Text` +
+`WaypointMarker`. A separate `Drone HUD Canvas` -> `Drone Status Label`
+object carries `DroneStatusDisplay` (`statusText`).
 
 ## What's real vs. what's a documented limitation
 
@@ -116,6 +147,10 @@ separate `Drone HUD Canvas` -> `Drone Status Label` object carries
   — from Ryze's own published SDK documentation, and confirmed to be the
   right SDK variant against a photo of the actual unit (plain Tello Boost
   Combo, not EDU).
+- `AsrModule.AsrTranscriptionOptions`/`startTranscribing`/
+  `stopTranscribing` and `TextToSpeechModule`/`TextToSpeech.Options` (Flow
+  B5) — the same confirmed-working shapes already proven in
+  `spectacles-voice-memory`'s `VoiceListener`/`VoiceResponder`.
 
 **Real limitations, not oversights:**
 - **No absolute positioning on the Tello.** It has no GPS-quality indoor
@@ -137,6 +172,10 @@ separate `Drone HUD Canvas` -> `Drone Status Label` object carries
   already centimeters (matching both Tello's `go` units and the rest of
   this hackathon's scenes) — verify against the actual scene scale before a
   real flight.
+- **Voice control has a network round-trip in the loop.** Every spoken
+  command costs one Groq API call before the drone reacts — a real, felt
+  delay (see `drone-bridge/README.md`), unlike the gesture flows which are
+  fully local and instant.
 
 ## Known TODOs / needs in-editor verification
 
@@ -151,6 +190,10 @@ separate `Drone HUD Canvas` -> `Drone Status Label` object carries
   design choice; revisit if a 4th+ waypoint is wanted later.
 - `DroneBridgeClient`: whether plain `ws://` is accepted on real hardware
   or `wss://` (TLS) is mandatory — see `drone-bridge/README.md`.
+- Voice control (Flow B5) needs `GROQ_API_KEY` set on the `drone-bridge`
+  process to do anything — without it, `voice_command` messages get a
+  spoken rejection but gesture control is unaffected. See
+  `drone-bridge/README.md`.
 - Nothing in this module has been run against a real Tello or real hand
   tracking yet — it compiles clean in Lens Studio 5.15.4 (verified), but
   the gesture thresholds (`fistThreshold`, `openThreshold`,
@@ -159,18 +202,29 @@ separate `Drone HUD Canvas` -> `Drone Status Label` object carries
 
 ## Status (live-verified in Lens Studio, editor preview)
 
-- Compiles clean against Lens Studio 5.15.4's real `tsc` — both flows
-  together, including the Spatial Anchors v0.0.8 package API and SIK's
-  `BaseHand`/`WorldCameraFinderProvider`. `MessageEvent`/`CloseEvent` aren't
-  ambient types in this TS environment (no DOM lib) — `DroneBridgeClient`'s
-  socket callbacks are typed as plain structural objects instead
-  (compiler-verified fix, TS2304).
-- Full scene wired with both flows enabled side by side and run in the
-  desktop preview with no uncaught exceptions: `AnchorModule` initializes
-  (`Spatial Anchor version: v0.0.8`), `DebugDroneHarness` comes up ready,
-  and `DroneBridgeClient` fails to connect only via a caught `InternalError`
-  ("API not available on the simulated platform") — the same expected,
-  handled failure mode as `CameraModule`/`GestureModule` calls in the other
-  two modules' editor previews.
-- Not yet tested: real hand tracking, a real Tello, or the `drone-bridge`
-  relay actually running — see the TODOs above.
+- Compiles clean against Lens Studio 5.15.4's real `tsc` — all three flows
+  together, including the Spatial Anchors v0.0.8 package API, SIK's
+  `BaseHand`/`WorldCameraFinderProvider`, and `AsrModule`/
+  `TextToSpeechModule`. `MessageEvent`/`CloseEvent` aren't ambient types in
+  this TS environment (no DOM lib) — `DroneBridgeClient`'s socket callbacks
+  are typed as plain structural objects instead (compiler-verified fix,
+  TS2304).
+- Full scene wired with all three flows enabled side by side and run in
+  the desktop preview with no uncaught exceptions: `AnchorModule`
+  initializes (`Spatial Anchor version: v0.0.8`), `DebugDroneHarness`
+  comes up ready, `DroneBridgeClient` fails to connect only via a caught
+  `InternalError` ("API not available on the simulated platform"), and
+  `DroneVoiceListener`'s pinch-trigger wiring fails via the same caught,
+  expected `GestureModule` error seen in `spectacles-voice-memory`'s
+  `VoiceListener` — all the same expected, handled failure modes seen
+  elsewhere in this project's editor previews, not new problems.
+- **Found and fixed while wiring voice control:** `drone-bridge`'s
+  ack/error check assumed every Tello reply was literally `"ok"`, but
+  `battery?` replies with a plain number — a real battery query would have
+  been misreported as an error. Fixed in `server.js` (checks for a numeric
+  reply for that command specifically). This path was never previously
+  exercised by any gesture flow, so the bug was latent, not previously
+  live-verified as fixed.
+- Not yet tested: real hand tracking, a real Tello, the `drone-bridge`
+  relay actually running, or an actual Groq API call for voice control —
+  see the TODOs above.

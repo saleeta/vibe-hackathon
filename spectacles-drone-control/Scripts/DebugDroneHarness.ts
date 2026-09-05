@@ -11,7 +11,7 @@ import { DroneEvents } from './Core/DroneEvents';
 export class DebugDroneHarness extends BaseScriptComponent {
   onAwake(): void {
     this.createEvent('OnStartEvent').bind(() => {
-      print('[DebugDroneHarness] Ready. Try simulateTakeoff(), simulateFlyToDestination(), simulateEmergency(), or simulateBatteryUpdate().');
+      print('[DebugDroneHarness] Ready. Try simulateTakeoff(), simulateFlyToDestination(), simulateEmergency(), simulateBatteryUpdate(), or simulateVoiceResponse().');
     });
   }
 
@@ -37,5 +37,10 @@ export class DebugDroneHarness extends BaseScriptComponent {
 
   simulateBridgeError(message: string = 'no response from drone'): void {
     DroneEvents.onStatusReceived.invoke({ type: 'error', raw: message });
+  }
+
+  /** Exercises DroneVoiceResponder's TTS without a live bridge or ASR. */
+  simulateVoiceResponse(text: string = 'Taking off now.'): void {
+    DroneEvents.onStatusReceived.invoke({ type: 'ack', spokenText: text });
   }
 }
