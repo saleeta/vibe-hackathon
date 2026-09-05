@@ -5,14 +5,35 @@ import { TrackedObjectClass } from './Core/VoiceMemoryTypes';
 /**
  * Debug/testing harness — lets every B1-B4 state be reached without a
  * trained object-detection model, a microphone, or waiting on real
- * hardware, same purpose as spectacles-perception's DebugHarness. Call
- * these from the Logger panel.
+ * hardware, same purpose as spectacles-perception's DebugHarness.
+ *
+ * IMPORTANT: there is no built-in Lens Studio feature to call a script
+ * method from the Inspector or Logger panel (confirmed against Snap's own
+ * docs). So `autoRun` fires `simulateFoundWithLocation('keys', ...)`
+ * automatically a few seconds after the Lens starts, to actually show the
+ * RewindPopup + spoken response on real hardware. Turn `autoRun` off in
+ * the Inspector once you're done watching it (it will otherwise fire on
+ * every launch, which can interleave oddly with a real voice query a few
+ * seconds later).
  */
 @component
 export class DebugVoiceMemoryHarness extends BaseScriptComponent {
+  @input
+  @hint("Automatically call simulateFoundWithLocation() a few seconds after the Lens starts. There's no way to invoke a method from the Inspector/Logger, so this is how to see the effect on real hardware.")
+  autoRun: boolean = true;
+
+  @input
+  @hint('Delay in seconds before autoRun fires.')
+  autoRunDelaySeconds: number = 3;
+
   onAwake(): void {
     this.createEvent('OnStartEvent').bind(() => {
-      print('[DebugVoiceMemoryHarness] Ready. Try simulateObjectSeenThenGone(), simulateVoiceQuery(), or simulateFoundWithLocation().');
+      print('[DebugVoiceMemoryHarness] Ready. autoRun will call simulateFoundWithLocation() automatically — see the autoRun input to disable.');
+      if (this.autoRun) {
+        const delay = this.createEvent('DelayedCallbackEvent');
+        delay.bind(() => this.simulateFoundWithLocation());
+        delay.reset(this.autoRunDelaySeconds);
+      }
     });
   }
 

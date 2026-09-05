@@ -8,15 +8,33 @@ import { DetectedObject, EatingState, FoodAnalysisResult, HandSide, HandState, H
  * without real camera input, real hand tracking, or a live backend —
  * useful both in-editor and for a from-scratch demo run.
  *
- * None of this runs unless explicitly invoked — it never fires on its own
- * during normal operation. Call these from the Logger panel or wire a
- * keyboard/UI trigger to them.
+ * IMPORTANT: there is no built-in Lens Studio feature to call a script
+ * method from the Inspector or Logger panel (confirmed against Snap's own
+ * docs — Script Input Fields can be tweaked there, but arbitrary methods
+ * cannot be invoked). So `autoRun` fires `simulateFullBite()` automatically
+ * a few seconds after the Lens starts — this is also the more faithful
+ * preview of the real feature anyway, since A5/A6 are meant to be fully
+ * automatic (no interaction) once a real detector exists. Turn `autoRun`
+ * off in the Inspector once you're done watching the demo fire on launch.
  */
 @component
 export class DebugHarness extends BaseScriptComponent {
+  @input
+  @hint("Automatically call simulateFullBite() a few seconds after the Lens starts. There's no way to invoke a method from the Inspector/Logger, so this is how to see the effect on real hardware.")
+  autoRun: boolean = true;
+
+  @input
+  @hint('Delay in seconds before autoRun fires.')
+  autoRunDelaySeconds: number = 3;
+
   onAwake(): void {
     this.createEvent('OnStartEvent').bind(() => {
-      print('[DebugHarness] Ready. Call simulateFullBite() from the Logger panel to test A2-A6 without hardware.');
+      print('[DebugHarness] Ready. autoRun will call simulateFullBite() automatically — see the autoRun input to disable.');
+      if (this.autoRun) {
+        const delay = this.createEvent('DelayedCallbackEvent');
+        delay.bind(() => this.simulateFullBite());
+        delay.reset(this.autoRunDelaySeconds);
+      }
     });
   }
 

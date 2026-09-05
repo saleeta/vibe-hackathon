@@ -14,9 +14,13 @@ const nativeInternetModule: InternetModule = require('LensStudio:InternetModule'
  * here per explicit instruction — see git history for that version if this
  * project is ever headed toward publishing.
  *
- * Model defaults to `llama-3.1-8b-instant` — genuinely "smol"/fast (Groq's
- * LPU inference is typically sub-second), matching the realtime voice-agent
- * goal better than a heavier model would.
+ * Model default: live-tested on real hardware — `llama-3.1-8b-instant`
+ * (genuinely "smol"/fast, matching the realtime voice-agent goal) returned
+ * a live 404 from Groq's API despite being listed as current in Groq's own
+ * docs at the time this was written; `llama-3.3-70b-versatile` is what
+ * actually worked in that same test. Groq's model catalog changes over
+ * time — if this starts 404ing again, check https://console.groq.com/docs/models
+ * for the current list rather than trusting this comment.
  */
 @component
 export class OpenEndedQAClient extends BaseScriptComponent {
@@ -26,7 +30,7 @@ export class OpenEndedQAClient extends BaseScriptComponent {
 
   @input
   @hint('Groq-hosted model id.')
-  model: string = 'llama-3.1-8b-instant';
+  model: string = 'llama-3.3-70b-versatile';
 
   @input maxTokens: number = 120;
 
@@ -59,7 +63,16 @@ export class OpenEndedQAClient extends BaseScriptComponent {
     });
 
     if (!response.ok) {
-      throw new Error(`Groq API returned ${response.status}`);
+      // Include the response body — Groq's error bodies say exactly what's
+      // wrong (e.g. "model_not_found"), turning a live failure into a
+      // self-diagnosing one instead of a bare status code to guess from.
+      let detail = '';
+      try {
+        detail = await response.text();
+      } catch {
+        // best-effort only
+      }
+      throw new Error(`Groq API returned ${response.status}${detail ? `: ${detail}` : ''}`);
     }
 
     const json = await response.json();

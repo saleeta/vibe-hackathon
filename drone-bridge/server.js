@@ -46,7 +46,13 @@ const TELLO_CMD_PORT = 8889;
 const TELLO_STATE_PORT = 8890;
 const COMMAND_TIMEOUT_MS = 7000;
 const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
-const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
+// Default confirmed working via a live test on real Spectacles hardware —
+// llama-3.1-8b-instant returned a 404 from Groq's API despite being listed
+// as current in Groq's own docs; llama-3.3-70b-versatile is what actually
+// worked (see spectacles-voice-memory's OpenEndedQAClient.ts for the same
+// finding). Groq's model catalog changes over time — check
+// https://console.groq.com/docs/models if this starts 404ing again.
+const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
 
 // ---------------------------------------------------------------------------
 // Tello UDP link — one command in flight at a time, per Tello SDK's own

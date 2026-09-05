@@ -108,6 +108,7 @@ export class VoiceListener extends BaseScriptComponent {
   private handleFinalTranscript(text: string): void {
     if (this.finalHandled) return;
     this.finalHandled = true;
+    print(`[VoiceListener] Heard: "${text}"`);
 
     const objectClass = parseLocateObjectIntent(text);
     if (objectClass) {

@@ -72,7 +72,7 @@ export class RewindPopup extends BaseScriptComponent {
 
     this.setVisible(true);
     this.captionText.text = `${result.objectClass} · last seen`;
-    this.rewindSound?.play(1);
+    this.playRewindSound();
 
     const framesOldestFirst = sighting.snippetFrames;
     const framesForRewind = framesOldestFirst.slice().reverse(); // play backwards, most-recent first
@@ -98,6 +98,22 @@ export class RewindPopup extends BaseScriptComponent {
     const step = this.createEvent('DelayedCallbackEvent');
     step.bind(() => this.playFrameSequence(frames, index + 1, token));
     step.reset(this.frameIntervalMs / 1000);
+  }
+
+  /**
+   * A missing/unassigned audioTrack on `rewindSound` throws
+   * `InternalError: [AudioComponent] Audio player is not enabled` from
+   * `.play()` — confirmed live on real hardware, and uncaught it takes
+   * down the entire running Lens (not just this component). A decorative
+   * sound failing to play must never be allowed to do that.
+   */
+  private playRewindSound(): void {
+    if (!this.rewindSound) return;
+    try {
+      this.rewindSound.play(1);
+    } catch (err) {
+      print(`[RewindPopup] Rewind sound failed to play (is rewindSound.audioTrack assigned in the Inspector?): ${err}`);
+    }
   }
 
   private setVisible(visible: boolean): void {

@@ -86,7 +86,7 @@ export class AutoLogDisplay extends BaseScriptComponent {
     const sceneObject = this.logText.getSceneObject();
     sceneObject.enabled = true;
     this.animateOpacity(0, 1, this.fadeMs);
-    this.logChimeAudio?.play(1);
+    this.playChime();
 
     // Cancel any pending hide from a previous log so back-to-back bites
     // each get their own full display window.
@@ -112,6 +112,22 @@ export class AutoLogDisplay extends BaseScriptComponent {
         onDone?.();
       }
     });
+  }
+
+  /**
+   * A missing/unassigned audioTrack on `logChimeAudio` throws
+   * `InternalError: [AudioComponent] Audio player is not enabled` from
+   * `.play()` — confirmed live on real hardware, and uncaught it takes
+   * down the entire running Lens (not just this component). A decorative
+   * chime failing to play must never be allowed to do that.
+   */
+  private playChime(): void {
+    if (!this.logChimeAudio) return;
+    try {
+      this.logChimeAudio.play(1);
+    } catch (err) {
+      print(`[AutoLogDisplay] Chime failed to play (is logChimeAudio.audioTrack assigned in the Inspector?): ${err}`);
+    }
   }
 
   // Base alphas from applyCardStyle() — fade multiplies toward these, not toward fully opaque.
