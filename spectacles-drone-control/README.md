@@ -92,6 +92,32 @@ Deliberately **discrete gestures, not continuous joystick control** — see
 "What's a V2, not built" below. `emergency` is also the one action voice
 control can never reach, by design (see Flow B5 above).
 
+## Left/right/up/down (gesture flow, layered on top) — `DirectionalHandController`
+
+```
+Left hand open, raised above head, held    -> fly up
+Left hand open, lowered below head, held   -> fly down
+Left hand open, held out to the world-left of head, held  -> fly left
+Left hand open, held out to the world-right of head, held -> fly right
+```
+
+Uses the LEFT hand specifically so it can't collide with takeoff/land
+(right hand). Each fires one `go` command for a fixed step (`moveDistanceCm`,
+default 50cm, at `speedCmPerSec` default 40) — same discrete, non-joystick
+philosophy as takeoff/land, not a V2 continuous-control system.
+
+**Left/right are world-space, not wearer-facing-relative** — compared
+directly against the head's world X position, the same simple pattern
+`HandCommandController` already uses for takeoff/land's world Y comparison.
+"Left" is therefore a fixed world direction, not "whichever way the wearer
+happens to be facing." Fine for a demo where the wearer stays roughly
+facing one direction; wrong if they turn around mid-flight. The correct fix
+needs the camera's actual facing/right vector, which would need verifying
+against `WorldCameraFinderProvider`'s real API surface before using —
+deliberately not guessed here (see this project's own established rule:
+never trust an unverified Lens Studio API assumption). Revisit if this
+becomes a real problem.
+
 ## Why there's a separate `drone-bridge/` folder at the repo root
 
 **Confirmed against Lens Studio's own docs: Spectacles has no raw UDP socket
@@ -113,6 +139,7 @@ Scripts/
                                 AnchorDestinationController.ts (Flow B)
                                 TelloGoVector.ts (Tello's real x/y/z constraint, used by both flows)
   B2_GestureCommands/          open-hand-height / fist-pose detection -> takeoff/land/emergency
+                                DirectionalHandController.ts -> left/right/up/down (left hand)
   B3_DroneBridge/               WebSocket client to drone-bridge
   B4_StatusUI/                  always-visible glass-tile status line (last action + battery)
   B5_VoiceControl/              DroneVoiceListener.ts + DroneVoiceResponder.ts (Flow B5)
@@ -124,7 +151,8 @@ Scripts/
 One root `DroneControlModule` object holding, alongside each other:
 `WaypointSelector` (`waypoint1/2/3` -> the 3 marker objects, Flow A),
 `AnchorModule` + `AnchorDestinationController` (`anchorModule` -> the
-`AnchorModule` above, Flow B), `HandCommandController`, `DroneBridgeClient`
+`AnchorModule` above, Flow B), `HandCommandController`,
+`DirectionalHandController`, `DroneBridgeClient`
 (`bridgeUrl` -> your bridge's address), `DebugDroneHarness`,
 `DroneVoiceListener` (`bridgeClient` -> `DroneBridgeClient` above),
 `DroneVoiceResponder` (`voiceAudio` -> an `AudioComponent` on the same
@@ -199,6 +227,13 @@ object carries `DroneStatusDisplay` (`statusText`).
   the gesture thresholds (`fistThreshold`, `openThreshold`,
   `raiseAboveHead`, `selectionRadius`, etc.) are starting guesses that will
   need tuning once tested on-device.
+- `DirectionalHandController.ts` (left/right/up/down) was written and
+  pushed while Lens Studio was unavailable to this session — **not yet
+  pushed into the live project, not yet compiled against real `tsc`, not
+  yet wired into the scene.** First thing to do once Lens Studio's back:
+  push the file, add the component to `DroneControlModule`, compile, and
+  run through `CompileWithLogsTool`/`RunAndCollectLogsTool` before trusting
+  it the way the rest of this module has been verified.
 
 ## Status (live-verified in Lens Studio, editor preview)
 

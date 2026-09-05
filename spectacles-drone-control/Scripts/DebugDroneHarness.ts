@@ -11,7 +11,7 @@ import { DroneEvents } from './Core/DroneEvents';
 export class DebugDroneHarness extends BaseScriptComponent {
   onAwake(): void {
     this.createEvent('OnStartEvent').bind(() => {
-      print('[DebugDroneHarness] Ready. Try simulateTakeoff(), simulateFlyToDestination(), simulateEmergency(), simulateBatteryUpdate(), or simulateVoiceResponse().');
+      print('[DebugDroneHarness] Ready. Try simulateTakeoff(), simulateLand(), simulateFlyLeft/Right/Up/Down(), simulateFlyToDestination(), simulateEmergency(), simulateBatteryUpdate(), or simulateVoiceResponse().');
     });
   }
 
@@ -29,6 +29,23 @@ export class DebugDroneHarness extends BaseScriptComponent {
 
   simulateFlyToDestination(x: number = 100, y: number = 0, z: number = -50): void {
     DroneEvents.onCommandRequested.invoke({ type: 'goto', x, y, z, speed: 40 });
+  }
+
+  /** Matches DirectionalHandController's defaults (50cm step, 40cm/s) — same go-vector convention: y = left(+)/right(-), z = up(+)/down(-). */
+  simulateFlyLeft(distanceCm: number = 50): void {
+    DroneEvents.onCommandRequested.invoke({ type: 'goto', x: 0, y: distanceCm, z: 0, speed: 40 });
+  }
+
+  simulateFlyRight(distanceCm: number = 50): void {
+    DroneEvents.onCommandRequested.invoke({ type: 'goto', x: 0, y: -distanceCm, z: 0, speed: 40 });
+  }
+
+  simulateFlyUp(distanceCm: number = 50): void {
+    DroneEvents.onCommandRequested.invoke({ type: 'goto', x: 0, y: 0, z: distanceCm, speed: 40 });
+  }
+
+  simulateFlyDown(distanceCm: number = 50): void {
+    DroneEvents.onCommandRequested.invoke({ type: 'goto', x: 0, y: 0, z: -distanceCm, speed: 40 });
   }
 
   simulateBatteryUpdate(batteryPercent: number = 78): void {
