@@ -1,0 +1,16 @@
+{
+  "name": "voice-agent-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Minimal proxy backend for the Spectacles voice agent's open-ended question fallback. Holds no provider API key itself — calls the platform's shared LLM gateway (zorc-ai-gateway) via LLM_BASE_URL/LLM_API_KEY, injected at deploy time.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
