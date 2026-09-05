@@ -38,13 +38,39 @@ const path = require('path');
 const dgram = require('dgram');
 const https = require('https');
 const http = require('http');
+const { spawn } = require('child_process');
 const { WebSocketServer } = require('ws');
 
 const WS_PORT = Number(process.env.WS_PORT || 8765);
 const TELLO_IP = process.env.TELLO_IP || '192.168.10.1';
 const TELLO_CMD_PORT = 8889;
 const TELLO_STATE_PORT = 8890;
-const COMMAND_TIMEOUT_MS = 7000;
+const TELLO_VIDEO_PORT = 11111;
+const COMMAND_TIMEOUT_MS = Number(process.env.COMMAND_TIMEOUT_MS || 15000);
+// The real Tello SDK has a genuine 15s inactivity timeout (confirmed
+// against djitellopy's own send_keepalive() doc comment: "prevent the
+// drone from landing after 15s") — official control apps stay connected by
+// sending SOMETHING at least that often. 5s gives a comfortable margin
+// without spamming the shared Tello Wi-Fi link.
+//
+// NOTE: djitellopy documents a dedicated 'keepalive' command for this, but
+// live-tested against real hardware here it came back "unknown command:
+// keepalive" — this drone's firmware doesn't support that verb. Re-sending
+// plain 'command' instead: it's the one command guaranteed supported by
+// every Tello SDK revision (required to enter SDK mode at all) and is
+// idempotent to resend once already in SDK mode.
+const KEEPALIVE_INTERVAL_MS = 5000;
+// Kept low deliberately: this shares the same Tello Wi-Fi link that flight
+// commands need low latency on, and it all has to fit through Lens Studio's
+// WebSocket as base64 JSON (no raw binary video path on the Lens side).
+// 480x360 keeps the Tello's native 4:3 aspect ratio; 5fps/quality 6 is
+// enough for a "can I see roughly what the drone sees" HUD picture, not a
+// smooth viewfinder — raise these only after confirming real Wi-Fi headroom
+// on real hardware, per this project's established measure-first approach.
+const VIDEO_FPS = Number(process.env.VIDEO_FPS || 5);
+const VIDEO_WIDTH = Number(process.env.VIDEO_WIDTH || 480);
+const VIDEO_HEIGHT = Number(process.env.VIDEO_HEIGHT || 360);
+const VIDEO_JPEG_QUALITY = Number(process.env.VIDEO_JPEG_QUALITY || 6); // ffmpeg mjpeg scale: 1 (best/largest) - 31 (worst/smallest)
 const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
 // Default confirmed working via a live test on real Spectacles hardware —
 // llama-3.1-8b-instant returned a 404 from Groq's API despite being listed
@@ -64,6 +90,7 @@ class TelloLink {
     this.onState = onState;
     this.onLog = onLog;
     this.pending = null; // { resolve, reject, timer }
+    this.keepaliveTimer = null;
     this.cmdSocket = dgram.createSocket('udp4');
     this.stateSocket = dgram.createSocket('udp4');
 
@@ -77,7 +104,31 @@ class TelloLink {
   async start() {
     this.cmdSocket.bind(); // ephemeral local port for sending/receiving command replies
     this.stateSocket.bind(TELLO_STATE_PORT);
+    // Start the keepalive loop BEFORE awaiting the first 'command' below —
+    // if the drone isn't reachable yet (not powered on, still booting,
+    // Wi-Fi not joined yet), this loop is what keeps retrying entry into
+    // SDK mode every KEEPALIVE_INTERVAL_MS instead of giving up after one
+    // failed attempt at startup.
+    this._startKeepalive();
     await this.sendCommand('command'); // enter SDK mode — must be first
+  }
+
+  // The real Tello SDK auto-lands/times out a session after 15s of no
+  // commands at all — this is what real control apps do to hold the
+  // connection open through idle periods (between gestures/voice commands,
+  // or just while the wearer is standing still), not something specific to
+  // testing. Also doubles as the startup retry loop (see start()) for
+  // whenever SDK mode hasn't been entered yet — resending 'command' is safe
+  // and correct in both cases (see KEEPALIVE_INTERVAL_MS's comment for why
+  // it's 'command' and not djitellopy's 'keepalive'). Skips sending if a
+  // real command is already in flight rather than competing with it
+  // (sendCommand only allows one at a time).
+  _startKeepalive() {
+    if (this.keepaliveTimer) return;
+    this.keepaliveTimer = setInterval(() => {
+      if (this.pending) return; // a real command is already in flight — don't compete with it
+      this.sendCommand('command').catch((err) => this.onLog(`keepalive failed (non-fatal): ${err}`));
+    }, KEEPALIVE_INTERVAL_MS);
   }
 
   sendCommand(text) {
@@ -121,6 +172,106 @@ class TelloLink {
         batteryPercent: battery ? Number(battery[1]) : undefined,
         heightCm: height ? Number(height[1]) : undefined,
       });
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Video relay — the Lens has no way to decode raw H.264 (confirmed: Lens
+// Studio's scripting API has no video-decode primitive, only Texture from
+// already-encoded still-image formats), so ffmpeg does the real decoding
+// here and this just re-packages its output as a throttled JPEG sequence
+// over the same WebSocket the flight commands use. Requires `ffmpeg` to be
+// installed and on PATH on whatever machine runs this bridge — it is NOT an
+// npm dependency of this project (avoids bundling a large native binary);
+// see the README for install instructions.
+//
+// Gated behind explicit start()/stop() (driven by 'video_stream_start' /
+// 'video_stream_stop' messages from the Lens) rather than always-on, so the
+// shared Tello Wi-Fi link isn't spending bandwidth on video the wearer isn't
+// currently looking at.
+// ---------------------------------------------------------------------------
+
+class VideoRelay {
+  constructor(sendTelloCommand, onFrame, onLog) {
+    this.sendTelloCommand = sendTelloCommand;
+    this.onFrame = onFrame;
+    this.onLog = onLog;
+    this.ffmpeg = null;
+    this.buffer = Buffer.alloc(0);
+  }
+
+  get isActive() {
+    return this.ffmpeg !== null;
+  }
+
+  async start() {
+    if (this.isActive) return;
+
+    // Enter video mode on the drone itself first — ffmpeg has nothing to
+    // decode until the Tello actually starts pushing H.264 to this port.
+    await this.sendTelloCommand('streamon');
+
+    const args = [
+      '-f', 'h264',
+      '-i', `udp://0.0.0.0:${TELLO_VIDEO_PORT}`,
+      '-f', 'mjpeg',
+      '-q:v', String(VIDEO_JPEG_QUALITY),
+      '-r', String(VIDEO_FPS),
+      '-s', `${VIDEO_WIDTH}x${VIDEO_HEIGHT}`,
+      '-loglevel', 'error',
+      'pipe:1',
+    ];
+
+    let proc;
+    try {
+      proc = spawn('ffmpeg', args);
+    } catch (err) {
+      throw new Error(`Failed to spawn ffmpeg (is it installed and on PATH?): ${err}`);
+    }
+    this.ffmpeg = proc;
+    this.buffer = Buffer.alloc(0);
+
+    proc.stdout.on('data', (chunk) => this._handleChunk(chunk));
+    proc.stderr.on('data', (chunk) => this.onLog(`[ffmpeg] ${chunk.toString().trim()}`));
+    proc.on('error', (err) => {
+      this.onLog(`ffmpeg process error (is ffmpeg installed and on PATH?): ${err}`);
+      this.ffmpeg = null;
+    });
+    proc.on('exit', (code, signal) => {
+      this.onLog(`ffmpeg exited (code=${code}, signal=${signal})`);
+      this.ffmpeg = null;
+    });
+  }
+
+  async stop() {
+    if (!this.isActive) return;
+    const proc = this.ffmpeg;
+    this.ffmpeg = null;
+    this.buffer = Buffer.alloc(0);
+    proc.kill('SIGKILL');
+    // Best-effort — if the drone already disconnected there's nothing to
+    // tell it to stop streaming to, and that's fine.
+    await this.sendTelloCommand('streamoff').catch((err) => this.onLog(`streamoff failed (non-fatal): ${err}`));
+  }
+
+  // ffmpeg's mjpeg muxer writes back-to-back JPEGs with no framing of its
+  // own beyond each image's own SOI (0xFFD8) / EOI (0xFFD9) markers — scan
+  // for those directly rather than depending on any wrapping protocol.
+  _handleChunk(chunk) {
+    this.buffer = Buffer.concat([this.buffer, chunk]);
+    for (;;) {
+      const start = this.buffer.indexOf(Buffer.from([0xff, 0xd8]));
+      if (start === -1) {
+        this.buffer = Buffer.alloc(0); // no frame start yet — drop any leading junk
+        return;
+      }
+      const end = this.buffer.indexOf(Buffer.from([0xff, 0xd9]), start + 2);
+      if (end === -1) return; // frame not complete yet — wait for more data
+
+      const frame = this.buffer.subarray(start, end + 2);
+      this.buffer = this.buffer.subarray(end + 2);
+      this.onFrame(frame);
     }
   }
 }
@@ -274,9 +425,27 @@ const tello = new TelloLink(
   (state) => broadcastState(state),
   (msg) => log(`[tello] ${msg}`)
 );
+const videoRelay = new VideoRelay(
+  (cmd) => tello.sendCommand(cmd),
+  (frame) => broadcastVideoFrame(frame),
+  (msg) => log(`[video] ${msg}`)
+);
 
 function broadcastState(state) {
   const payload = JSON.stringify({ type: 'state', ...state });
+  for (const client of wss.clients) {
+    if (client.readyState === client.OPEN) client.send(payload);
+  }
+}
+
+function broadcastVideoFrame(frame) {
+  const payload = JSON.stringify({
+    type: 'video_frame',
+    jpegBase64: frame.toString('base64'),
+    width: VIDEO_WIDTH,
+    height: VIDEO_HEIGHT,
+    timestampMillis: Date.now(),
+  });
   for (const client of wss.clients) {
     if (client.readyState === client.OPEN) client.send(payload);
   }
@@ -290,6 +459,22 @@ wss.on('connection', (ws) => {
       incoming = JSON.parse(data.toString());
     } catch (err) {
       log(`Failed to parse message: ${err}`);
+      return;
+    }
+
+    if (incoming.type === 'video_stream_start') {
+      try {
+        await videoRelay.start();
+        ws.send(JSON.stringify({ type: 'ack', raw: 'video_stream_start' }));
+      } catch (err) {
+        log(`Failed to start video relay: ${err}`);
+        ws.send(JSON.stringify({ type: 'error', raw: String(err) }));
+      }
+      return;
+    }
+    if (incoming.type === 'video_stream_stop') {
+      await videoRelay.stop();
+      ws.send(JSON.stringify({ type: 'ack', raw: 'video_stream_stop' }));
       return;
     }
 
@@ -341,7 +526,15 @@ wss.on('connection', (ws) => {
       ws.send(JSON.stringify(payload));
     }
   });
-  ws.on('close', () => log('Lens disconnected.'));
+  ws.on('close', () => {
+    log('Lens disconnected.');
+    // Only ever one glasses wearer at a time realistically (same assumption
+    // the rest of this file makes) — don't leave ffmpeg running, and the
+    // Tello streaming, to nobody once they've gone.
+    if (wss.clients.size === 0 && videoRelay.isActive) {
+      videoRelay.stop().catch((err) => log(`Failed to stop video relay on disconnect: ${err}`));
+    }
+  });
 });
 
 async function main() {
