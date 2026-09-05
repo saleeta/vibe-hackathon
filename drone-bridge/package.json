@@ -1,0 +1,16 @@
+{
+  "name": "drone-bridge",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local WebSocket-to-UDP relay between the Spectacles drone-control Lens and a DJI/Ryze Tello drone. Run this on a laptop on the SAME Wi-Fi network as the Tello and the glasses — it is not meant to be deployed anywhere.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "ws": "^8.17.0"
+  }
+}
