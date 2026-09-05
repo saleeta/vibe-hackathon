@@ -1,6 +1,6 @@
-# api — Person B's HTTP surface
+# api — the nutrition pipeline's HTTP surface
 
-Every stage of B1-B6 is a plain TypeScript module (`../lens-studio/spectacles/Assets/PersonB/`)
+Every stage is a plain TypeScript module (`../lens-studio/spectacles/Assets/Nutrition/`)
 that can be imported directly — but this service puts a REST endpoint in
 front of each one too, so nothing requires importing TS to use: curl, a
 script in any language, or a future non-Lens client can all drive the
@@ -10,15 +10,21 @@ pipeline as plain HTTP.
 
 ```bash
 npm install
-ANTHROPIC_API_KEY=sk-ant-... npm run dev   # vision (B1) needs this
+OPENROUTER_API_KEY=sk-or-v1-... npm run dev   # vision (food recognition) needs this
 ```
+
+Vision runs via [OpenRouter](https://openrouter.ai)'s OpenAI-compatible API,
+currently pointed at `google/gemma-4-31b-it:free` (`api/src/vision/OpenRouterVisionClassifier.ts`)
+— free, vision-capable. No free Qwen-VL tier exists on OpenRouter as of
+writing (only paid `qwen/qwen2.5-vl-*`/`qwen3-vl-*`); swap the `MODEL`
+constant in that file if that changes or you'd rather use a paid model.
 
 Defaults to `http://localhost:4002`; talks to `nutrition-service` (B3) at
 `http://localhost:4001` (override with `NUTRITION_SERVICE_URL`).
 
 ## Endpoints
 
-| Endpoint | Stage(s) | Needs `ANTHROPIC_API_KEY` |
+| Endpoint | Stage(s) | Needs `OPENROUTER_API_KEY` |
 |---|---|---|
 | `GET /health` | — | no |
 | `POST /v1/food/classify` | B1 | yes |
@@ -49,8 +55,8 @@ For the hand-geometry method (live Spectacles capture, not a flat photo):
 
 ### `POST /v1/analyze` — the one endpoint that does everything
 
-Also the concrete backend for Person A's `IFoodAnalysisClient` contract —
-`PersonA/A5_EatingTrigger/FoodAnalysisClient.ts`'s `HttpFoodAnalysisClient`
+Also the concrete backend for the perception side's `IFoodAnalysisClient`
+contract — `Assets/Capture/FoodAnalysisClient.ts`'s `HttpFoodAnalysisClient`
 calls exactly this endpoint with exactly this request shape when wired into
 a live Lens (point its `backendUrl` input here). `food_hint`,
 `detection_confidence`, and `timestamp_millis` are optional and only present
@@ -93,15 +99,15 @@ that folder's README, and `../docs/ARCHITECTURE.md` for the full contract.
 
 Errors are JSON (`{ "error": "..." }`); `422` means no food was recognized in
 the image, `500` covers everything else (including a missing
-`ANTHROPIC_API_KEY`, which fails per-request with a clear message rather than
+`OPENROUTER_API_KEY`, which fails per-request with a clear message rather than
 at server startup, so `/health` and `/v1/portion/estimate` keep working
 without a key).
 
 ## Why `/v1/analyze` always uses the vision-direct portion method
 
 `PortionEstimator.estimate` (the hand-geometry method,
-`/v1/portion/estimate`) needs camera-space pixel hand geometry. Person A's
-`HandTracker` currently reports world-space hand positions instead (via
+`/v1/portion/estimate`) needs camera-space pixel hand geometry. The
+perception side's `HandTracker` currently reports world-space hand positions instead (via
 SIK), so nothing feeds that method live yet — `/v1/analyze` always uses the
 vision model's own direct weight estimate instead
 (`PortionEstimator.fromVisionEstimate`), for both a live Spectacles capture

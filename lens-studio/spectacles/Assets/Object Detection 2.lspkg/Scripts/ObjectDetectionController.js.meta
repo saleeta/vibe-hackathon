@@ -1,0 +1,56 @@
+- !<AssetImportMetadata/5b353c6b-0058-c4b0-7a6d-faaca26260c9>
+  ImportedAssetIds:
+    JavaScriptAsset: !<reference> 9381b539-e268-40ea-a8b7-fbf7cd6e7883
+  ImporterName: JavaScriptAssetImporter
+  PrimaryAsset: !<reference> 9381b539-e268-40ea-a8b7-fbf7cd6e7883
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    JavaScriptAsset: !<own> 66e6aaa1-fb2e-40d0-b843-140dfa83c2b4
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<ScriptAssetData/66e6aaa1-fb2e-40d0-b843-140dfa83c2b4>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: 8ca2dff2-509b-8f6a-8085-33d810160bd6
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    advanced: false
+    counter: false
+    hintController: false
+    lostFramesThreshold: false
+    matchingThreshold: false
+    mlController: false
+    objectToCopy: false
+    smoothing: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - counter: !<reference.Text> 00000000-0000-0000-0000-000000000000
+      objectToCopy: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      smoothing: 0.500000
+      advanced: false
+      mlController: !<reference.ScriptComponent> 00000000-0000-0000-0000-000000000000
+      hintController: !<reference.ScriptComponent> 00000000-0000-0000-0000-000000000000
+      matchingThreshold: 0.500000
+      lostFramesThreshold: 0
+  ScriptTypes:
+    -
+      {}

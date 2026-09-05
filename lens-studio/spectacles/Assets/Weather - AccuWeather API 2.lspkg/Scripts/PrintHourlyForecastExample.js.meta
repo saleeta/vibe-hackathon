@@ -1,0 +1,46 @@
+- !<AssetImportMetadata/81ed3045-8784-d9ae-5d05-d534289753a6>
+  ImportedAssetIds:
+    JavaScriptAsset: !<reference> 120081f5-a467-4424-8e9f-3085fac3f46a
+  ImporterName: JavaScriptAssetImporter
+  PrimaryAsset: !<reference> 120081f5-a467-4424-8e9f-3085fac3f46a
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    JavaScriptAsset: !<own> fa271ab1-7aa9-4b0b-b190-1d58ff215eaa
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<ScriptAssetData/fa271ab1-7aa9-4b0b-b190-1d58ff215eaa>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: |
+    This simple example calls the API to get the hourly forecast. It then prints the conditions for the hourly forecast.
+
+  VersionMajor: 1
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: d3321155-0876-8168-c3ce-9d5199828d31
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    accuweatherAPI: false
+    city: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - accuweatherAPI: !<reference.ScriptComponent> 00000000-0000-0000-0000-000000000000
+      city: ""
+  ScriptTypes:
+    -
+      {}

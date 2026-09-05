@@ -1,0 +1,37 @@
+- !<NativePackageDescriptor/1ef72b97-5102-4808-ad95-eb5e296aa69f>
+  PackagePath: ""
+  StudioVersion:
+    major: 5
+    minor: 15
+    patch: 4
+    build: 26022322
+    type: Unset
+    buildFlavor: ""
+    timestamp: 0
+    commit: ""
+  Description: "Food Pack Bitmoji Food Pack includes 26 different 3D models with Bitmoji's unique style: • basket apples • bowl of chips • burger • cereal box • cheese samples • cheese wedge • chip • chocolate syrup • cone seeds • cookie • dip • gravy boat • hot sauce • ice cream empty • ketchup bottle • marshmallow • orangeslice • pickle • pie • pie slice • popcorn • popcorn handful • popcorn kernel • salad leaf • sandwich • steak • tomato • turkey • turkey drumstick Click here to learn on Place Your Object in World Click here to learn more about Tracking Modes"
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  VersionMajor: 1
+  VersionMinor: 0
+  VersionPatch: 0
+  UpdateCheckpoint: 76
+  ExportUid: 93114f60-d5fe-4a74-9be8-f5a09a4fc3fe
+  ComponentUid: b3453307-e03d-4967-8b05-a1407fdf38f8
+  PackagePolicy: CanBeUnpackedTransparent
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  Instantiable: !<reference> 00000000-0000-0000-0000-000000000000
+  AssetLibraryDependencyStructure: !<AssetLibraryDependencyStructure>
+    Name: ""
+    AssetId: ""
+    Hash: ""
+    Version:
+      major: 0
+      minor: 0
+      patch: 0
+      build: 0

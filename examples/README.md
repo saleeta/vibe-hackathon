@@ -1,6 +1,7 @@
-# Person B end-to-end demo
+# Nutrition pipeline end-to-end demo
 
-Runs B1 → B2 → B4/B5 → B3 → B6 in plain Node, simulating a meal over several
+Runs recognition → portion → aggregation/dedup → nutrition lookup →
+confidence in plain Node, simulating a meal over several
 detected frames:
 
 - a bite of chicken, seen twice in a row (must not double count)

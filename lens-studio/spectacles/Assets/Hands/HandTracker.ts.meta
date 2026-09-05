@@ -1,0 +1,47 @@
+- !<AssetImportMetadata/f1cf2df3-8341-456d-8087-fde235bd9322>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> f705b9e2-dbd3-4e97-8188-b765262e98b0
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> f705b9e2-dbd3-4e97-8188-b765262e98b0
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> 80579972-f207-40b4-96f9-2ac9f46ce186
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/80579972-f207-40b4-96f9-2ac9f46ce186>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: 75705fd5-0a14-4d9b-a9dd-66562a465233
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    faceAnchor: false
+    velocitySmoothing: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - faceAnchor: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      velocitySmoothing: 0.400000
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - "// @input SceneObject faceAnchor {\"hint\":\"Anchor approximating the wearer's own face/mouth (e.g. the world camera object, or a small offset from it). Used for hand-to-face distance.\"}"
+    - '// @input float velocitySmoothing = 0.4 {"hint":"Smoothing factor for velocity estimate, 0-1. Higher = more responsive, noisier."}'

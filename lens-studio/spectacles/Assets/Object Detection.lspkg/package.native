@@ -1,0 +1,42 @@
+- !<NativePackageDescriptor/d5aeecbf-29ce-4521-9470-6dd25feb2c93>
+  PackagePath: ""
+  StudioVersion:
+    major: 5
+    minor: 15
+    patch: 4
+    build: 26022322
+    type: Unset
+    buildFlavor: ""
+    timestamp: 0
+    commit: ""
+  Description: |-
+    The Object Detection Template allows you to instantiate and place UI elements on the screen based on the bounding boxes of the objects of a certain class based on a Machine Learning model output.
+    
+    More info on a template: https://docs.snap.com/lens-studio/4.55.1/references/templates/ml/object-detection
+    
+    Training Notebook: https://github.com/Snapchat/snapml-templates/blob/main/Object%20Detection/object_detection.ipynb
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  VersionMajor: 1
+  VersionMinor: 0
+  VersionPatch: 0
+  UpdateCheckpoint: 76
+  ExportUid: f5bca8a0-bf52-4eeb-98ab-c29f7b11b2b4
+  ComponentUid: afddcdab-1b6e-4dd2-aec3-8bad887edbe0
+  PackagePolicy: CanBeUnpackedTransparent
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  Instantiable: !<reference> 00000000-0000-0000-0000-000000000000
+  AssetLibraryDependencyStructure: !<AssetLibraryDependencyStructure>
+    Name: ""
+    AssetId: ""
+    Hash: ""
+    Version:
+      major: 0
+      minor: 0
+      patch: 0
+      build: 0

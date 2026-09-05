@@ -6,14 +6,14 @@
  *
  * Requires, in separate terminals:
  *   cd nutrition-service && npm run dev
- *   ANTHROPIC_API_KEY=sk-... npm run dev   (from api/)
+ *   OPENROUTER_API_KEY=sk-or-v1-... npm run dev   (from api/)
  * Then, from api/:
  *   npm run analyze-folder
  */
 
 import * as fs from "fs";
 import * as path from "path";
-import { MealSummary } from "../../lens-studio/spectacles/Assets/PersonB/Types";
+import { MealSummary } from "../../lens-studio/spectacles/Assets/Nutrition/Types";
 
 const API_URL = process.env.API_URL ?? "http://localhost:4002";
 const TEST_IMAGES_DIR = path.resolve(__dirname, "../../test-images");
@@ -150,7 +150,7 @@ function renderHtmlReport(results: AnalyzeResult[], dir: string, mimeByExt: Reco
 <html>
 <head>
 <meta charset="utf-8" />
-<title>Person B test-image results</title>
+<title>Nutrition pipeline test-image results</title>
 <style>
   body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; background: #f5f5f4; margin: 0; padding: 32px; color: #1c1917; }
   h1 { font-size: 20px; margin: 0 0 4px; }
@@ -174,7 +174,7 @@ function renderHtmlReport(results: AnalyzeResult[], dir: string, mimeByExt: Reco
 </style>
 </head>
 <body>
-  <h1>Person B — test image results</h1>
+  <h1>Nutrition pipeline — test image results</h1>
   <p class="sub">Estimated glycemic load is derived from food composition only — not a measured blood glucose reading.</p>
   <div class="grid">
     ${cards}

@@ -23,17 +23,17 @@
 import {
   FoodRecognitionService,
   MockFoodClassifierBackend,
-} from "../lens-studio/spectacles/Assets/PersonB/FoodRecognitionService";
-import { PortionEstimator } from "../lens-studio/spectacles/Assets/PersonB/PortionEstimator";
-import { NutritionClient } from "../lens-studio/spectacles/Assets/PersonB/NutritionClient";
-import { EatingSessionManager } from "../lens-studio/spectacles/Assets/PersonB/EatingSessionManager";
-import { ConfidenceAggregator } from "../lens-studio/spectacles/Assets/PersonB/ConfidenceAggregator";
+} from "../lens-studio/spectacles/Assets/Nutrition/FoodRecognitionService";
+import { PortionEstimator } from "../lens-studio/spectacles/Assets/Nutrition/PortionEstimator";
+import { NutritionClient } from "../lens-studio/spectacles/Assets/Nutrition/NutritionClient";
+import { EatingSessionManager } from "../lens-studio/spectacles/Assets/Nutrition/EatingSessionManager";
+import { ConfidenceAggregator } from "../lens-studio/spectacles/Assets/Nutrition/ConfidenceAggregator";
 import {
   BoundingBox,
   HandObservation,
   EatingSession,
   FoodRegionDetection,
-} from "../lens-studio/spectacles/Assets/PersonB/Types";
+} from "../lens-studio/spectacles/Assets/Nutrition/Types";
 
 const NUTRITION_SERVICE_URL = "http://localhost:4001";
 

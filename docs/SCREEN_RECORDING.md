@@ -28,7 +28,7 @@ debug-only overlays) — our HUD must deliberately avoid that exclusion.
 
 ### Action item for whoever builds the Scene in Lens Studio
 
-1. Put all Person-B-facing UI (session banner, detected food list, running
+1. Put all nutrition-facing UI (session banner, detected food list, running
    kcal/macros, confidence indicator) on the Camera's default screen-space
    layer that feeds the Capture Target.
 2. Do not mark that layer/canvas as "hide in capture" or route it only to the

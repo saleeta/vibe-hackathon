@@ -1,0 +1,59 @@
+- !<AssetImportMetadata/0d396064-ae31-4315-914f-f51aed8716f5>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> 7abb70aa-7d9a-43ca-9002-38a000b2b3c2
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> 7abb70aa-7d9a-43ca-9002-38a000b2b3c2
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> 0fa00f75-b6bc-4d5d-823d-42379d2d91bd
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/0fa00f75-b6bc-4d5d-823d-42379d2d91bd>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: 0e9ef4e3-4f20-4400-bb85-c55462a88f08
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    confidenceText: false
+    displayDurationMs: false
+    fadeOutMs: false
+    glycemicText: false
+    headlineText: false
+    macrosText: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - headlineText: !<reference.Text> 00000000-0000-0000-0000-000000000000
+      macrosText: !<reference.Text> 00000000-0000-0000-0000-000000000000
+      glycemicText: !<reference.Text> 00000000-0000-0000-0000-000000000000
+      confidenceText: !<reference.Text> 00000000-0000-0000-0000-000000000000
+      displayDurationMs: !<float> 4000.000000
+      fadeOutMs: !<float> 500.000000
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - // @input Component.Text headlineText
+    - '// @input Component.Text macrosText {"hint":"Optional — protein/carbs/fat line. Only shown after a pinch expands the card."}'
+    - '// @input Component.Text glycemicText {"hint":"Optional — estimated glycemic load + category. Always labeled as an estimate, never \"blood sugar\". Only shown expanded."}'
+    - '// @input Component.Text confidenceText {"hint":"Optional — confidence breakdown, small/muted text. Only shown expanded."}'
+    - // @input float displayDurationMs = 4000
+    - // @input float fadeOutMs = 500

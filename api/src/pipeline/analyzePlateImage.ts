@@ -1,26 +1,29 @@
 /**
- * Composes B1 -> B2 -> B4/B5 -> B3 -> B6 into the single call backing
+ * Composes food recognition -> portion estimation -> aggregation/dedup ->
+ * nutrition lookup -> confidence into the single call backing
  * POST /v1/analyze. Reuses the exact same session/dedup code path a live
  * Spectacles session would use (EatingSessionManager), just as a one-frame
  * session that opens and closes immediately — so a standalone test photo
  * and a real eating session produce a MealSummary the same way, from the
  * same source of truth.
  *
- * Also this repo's implementation of Person A's `IFoodAnalysisClient`
- * backend contract (../../lens-studio/spectacles/Assets/PersonA/A5_EatingTrigger/FoodAnalysisClient.ts):
- * `eatingEventContext`, when present, carries A4's real EatingEventPayload
+ * Also this repo's implementation of the perception side's
+ * `IFoodAnalysisClient` backend contract
+ * (../../lens-studio/spectacles/Assets/Capture/FoodAnalysisClient.ts):
+ * `eatingEventContext`, when present, carries the real EatingEventPayload
  * (food_object / confidence / timestampMillis) from a live Spectacles
- * eating event — `detection_confidence` becomes B6's eatingConfidence
- * input instead of the fallback used for a manually-uploaded test photo,
- * and `food_hint` is passed to B1 as a disambiguation aid.
+ * eating event — `detection_confidence` becomes the confidence
+ * aggregator's eatingConfidence input instead of the fallback used for a
+ * manually-uploaded test photo, and `food_hint` is passed to food
+ * recognition as a disambiguation aid.
  */
 
-import { FoodRecognitionService } from "../../../lens-studio/spectacles/Assets/PersonB/FoodRecognitionService";
-import { PortionEstimator } from "../../../lens-studio/spectacles/Assets/PersonB/PortionEstimator";
-import { NutritionClient } from "../../../lens-studio/spectacles/Assets/PersonB/NutritionClient";
-import { EatingSessionManager, ObservationInput } from "../../../lens-studio/spectacles/Assets/PersonB/EatingSessionManager";
-import { ConfidenceAggregator } from "../../../lens-studio/spectacles/Assets/PersonB/ConfidenceAggregator";
-import { EatingSession, MealSummary } from "../../../lens-studio/spectacles/Assets/PersonB/Types";
+import { FoodRecognitionService } from "../../../lens-studio/spectacles/Assets/Nutrition/FoodRecognitionService";
+import { PortionEstimator } from "../../../lens-studio/spectacles/Assets/Nutrition/PortionEstimator";
+import { NutritionClient } from "../../../lens-studio/spectacles/Assets/Nutrition/NutritionClient";
+import { EatingSessionManager, ObservationInput } from "../../../lens-studio/spectacles/Assets/Nutrition/EatingSessionManager";
+import { ConfidenceAggregator } from "../../../lens-studio/spectacles/Assets/Nutrition/ConfidenceAggregator";
+import { EatingSession, MealSummary } from "../../../lens-studio/spectacles/Assets/Nutrition/Types";
 
 export interface AnalyzePlateImageDeps {
   foodRecognition: FoodRecognitionService;
@@ -28,10 +31,10 @@ export interface AnalyzePlateImageDeps {
   nutritionClient: NutritionClient;
 }
 
-/** Present when this call came from Person A's live EatingTrigger (A5) rather than a manually-uploaded test photo. */
+/** Present when this call came from the perception side's live EatingTrigger rather than a manually-uploaded test photo. */
 export interface EatingEventContext {
   foodHint?: string;
-  /** A4's confidence that this was genuinely an eating event — becomes B6's eatingConfidence. */
+  /** Confidence that this was genuinely an eating event — becomes the confidence aggregator's eatingConfidence. */
   detectionConfidence?: number;
   timestampMillis?: number;
 }

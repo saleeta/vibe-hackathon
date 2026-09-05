@@ -1,0 +1,56 @@
+- !<AssetImportMetadata/5397657d-ce1e-487a-8174-cbf4f89f2a5e>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> 5b4003a2-faa1-427f-8936-142a81c23ab6
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> 5b4003a2-faa1-427f-8936-142a81c23ab6
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> 18c3ae5b-c9cb-428f-b895-1fd4ee8bdb70
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/18c3ae5b-c9cb-428f-b895-1fd4ee8bdb70>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: b9a79ba9-684f-444f-8f27-233e6d154237
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    cameraModule: false
+    historySize: false
+    lowResSmallerDimension: false
+    perFrameBudgetMillis: false
+    targetFPS: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - cameraModule: !<reference.CameraModule> 00000000-0000-0000-0000-000000000000
+      targetFPS: !<float> 12.000000
+      lowResSmallerDimension: !<float> 320.000000
+      historySize: !<float> 30.000000
+      perFrameBudgetMillis: !<float> 60.000000
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - // @input Asset.CameraModule cameraModule
+    - '// @input float targetFPS = 12 {"hint":"Perception loop rate. 10-15 FPS is the spec target."}'
+    - '// @input float lowResSmallerDimension = 640 {"hint":"Native capture resolution (long edge) — used for continuous perception AND as the effective quality of the HQ capture sent to Gemini (see captureHighQuality). Raised from the original 320 since this is now doing double duty."}'
+    - '// @input float historySize = 30 {"hint":"How many recent sample timestamps to keep for FPS/perf bookkeeping."}'
+    - '// @input float perFrameBudgetMillis = 60 {"hint":"If the loop is consistently slower than this, targetFPS is halved automatically (min 4)."}'

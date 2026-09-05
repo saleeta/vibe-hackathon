@@ -1,0 +1,65 @@
+- !<AssetImportMetadata/68d0e0bb-7b3b-49a0-8fb0-c5272838d208>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> ff151a35-ed3e-45ff-9b5a-66c1df78f9aa
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> ff151a35-ed3e-45ff-9b5a-66c1df78f9aa
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> e69dc8e5-eb19-4ba0-851b-fe8df460d4a4
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/e69dc8e5-eb19-4ba0-851b-fe8df460d4a4>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: 2628b659-b2cb-45b8-b73e-cdb68be4b35f
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    confidenceThreshold: false
+    inputName: false
+    label: false
+    mlComponent: false
+    nmsThreshold: false
+    outputClsName: false
+    outputLocName: false
+    topK: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - mlComponent: !<reference.MLComponent> 00000000-0000-0000-0000-000000000000
+      inputName: input
+      outputClsName: cls
+      outputLocName: loc
+      label: food
+      confidenceThreshold: 0.450000
+      nmsThreshold: 0.450000
+      topK: !<float> 10.000000
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - // @input Component.MLComponent mlComponent
+    - '// @input string inputName = "data" {"hint":"Tensor name of the model input the frame texture binds to."}'
+    - '// @input string outputClsName = "cls" {"hint":"Tensor name of the per-anchor confidence output."}'
+    - '// @input string outputLocName = "loc" {"hint":"Tensor name of the per-anchor [dx,dy,dw,dh] box-regression output."}'
+    - '// @input string label = "food" {"hint":"Class label reported for every detection from this single-class model."}'
+    - // @input float confidenceThreshold = 0.45
+    - '// @input float nmsThreshold = 0.45 {"hint":"IoU threshold for greedy non-max suppression."}'
+    - '// @input float topK = 10 {"hint":"Keep at most this many detections per frame."}'

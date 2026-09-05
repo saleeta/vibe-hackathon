@@ -11,9 +11,9 @@ Three terminals, from the repo root:
 # 1. nutrition engine (B3)
 cd nutrition-service && npm install && npm run dev
 
-# 2. the API (B1-B6) — needs a real Anthropic key for the vision step
+# 2. the API (B1-B6) — needs a real OpenRouter key for the vision step
 cd api && npm install
-ANTHROPIC_API_KEY=sk-ant-... npm run dev
+OPENROUTER_API_KEY=sk-or-v1-... npm run dev
 
 # 3. batch-analyze everything in this folder
 cd api && npm run analyze-folder

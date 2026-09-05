@@ -1,0 +1,43 @@
+- !<AssetImportMetadata/5a0b4f9b-b65c-96f4-f1e2-85a459721a39>
+  ImportedAssetIds:
+    JavaScriptAsset: !<reference> caeb8a50-a82d-4af5-85cc-2933548a1d00
+  ImporterName: JavaScriptAssetImporter
+  PrimaryAsset: !<reference> caeb8a50-a82d-4af5-85cc-2933548a1d00
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    JavaScriptAsset: !<own> f154e60e-13fa-4981-b729-92df8bd49405
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<ScriptAssetData/f154e60e-13fa-4981-b729-92df8bd49405>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: Example latitudes and longitudes to use with Accuweather API
+  VersionMajor: 1
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: 7501f14a-6679-2d7c-6bee-589c9e9db2bd
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    {}
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    -
+      {}
+  ScriptTypes:
+    -
+      {}

@@ -1,0 +1,50 @@
+- !<AssetImportMetadata/f313be21-96fc-049e-fe05-4f642c9f5f75>
+  ImportedAssetIds:
+    JavaScriptAsset: !<reference> 9ba9b4db-b4fe-496a-b5bf-8bd98a903e3d
+  ImporterName: JavaScriptAssetImporter
+  PrimaryAsset: !<reference> 9ba9b4db-b4fe-496a-b5bf-8bd98a903e3d
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    JavaScriptAsset: !<own> c83fce76-631a-451c-a62a-af3f3bc2fa7b
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<ScriptAssetData/c83fce76-631a-451c-a62a-af3f3bc2fa7b>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: This script calls the API to get the current weather. It then presents that data in a UIWeatherDay.
+  VersionMajor: 1
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: 54e7ebd1-09ae-d027-ab78-672a54a7b2d5
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    accuweatherAPI: false
+    city: false
+    loadingObject: false
+    loadingTime: false
+    uiWeatherDay: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - accuweatherAPI: !<reference.ScriptComponent> 00000000-0000-0000-0000-000000000000
+      city: ""
+      uiWeatherDay: !<reference.ScriptComponent> 00000000-0000-0000-0000-000000000000
+      loadingObject: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      loadingTime: 0.150000
+  ScriptTypes:
+    -
+      {}

@@ -1,0 +1,93 @@
+- !<Material/fd93d7df-9d51-4efc-92c3-7dc8a8945661>
+  PackagePath: ""
+  PassesInfo:
+    - !<own> 05b73599-031f-4a29-9327-2f98fd47f040
+- !<PassInfo/05b73599-031f-4a29-9327-2f98fd47f040>
+  CachedProperties:
+    - overrideTimeDelta:
+        typeIdx: 1
+        value: 0.000000
+    - overrideTimeElapsed:
+        typeIdx: 1
+        value: 0.000000
+    - overrideTimeEnabled:
+        typeIdx: 0
+        value: 0
+  DepthWrite: true
+  DepthTest: false
+  DepthFunction: LessEqual
+  TwoSided: false
+  ColorMask: {x: true, y: true, z: true, w: true}
+  CullMode: Back
+  PolygonOffset: {x: 0.000000, y: 0.000000}
+  FrustumCulling: Auto
+  FrustumCullPad: 0.000000
+  InstanceCount: 1
+  Defines:
+    - Tweak_N67
+  BlendMode: PremultipliedAlphaAuto
+  Properties:
+    Port_Center_N013:
+      typeIdx: 3
+      value: {x: 0.500000, y: 0.500000}
+    Port_Default_N040:
+      typeIdx: 3
+      value: {x: 1.000000, y: 1.000000}
+    Port_Input0_N036:
+      typeIdx: 1
+      value: 1.000000
+    Port_Input0_N038:
+      typeIdx: 1
+      value: 0.000000
+    Port_Input1_N023:
+      typeIdx: 1
+      value: 0.000000
+    Port_Input1_N028:
+      typeIdx: 3
+      value: {x: 0.000000, y: 0.000000}
+    Port_Input1_N038:
+      typeIdx: 1
+      value: 0.000000
+    Port_Input1_N089:
+      typeIdx: 3
+      value: {x: 0.000000, y: 0.000000}
+    Port_Input2_N052:
+      typeIdx: 4
+      value: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Port_Input2_N089:
+      typeIdx: 3
+      value: {x: 0.500000, y: 0.500000}
+    Port_Scale_N013:
+      typeIdx: 3
+      value: {x: 1.500000, y: 1.500000}
+    Port_Value_N002:
+      typeIdx: 3
+      value: {x: 0.500000, y: 0.500000}
+    Port_Value_N057:
+      typeIdx: 1
+      value: 0.500000
+    Port_Value_N061:
+      typeIdx: 1
+      value: 0.005000
+    PreviewEnabled:
+      typeIdx: 0
+      value: 0
+    PreviewNodeID:
+      typeIdx: 0
+      value: 27
+    baseColor:
+      typeIdx: 5
+      value: {x: 0.267323, y: 0.265110, z: 0.269535, w: 0.531655}
+    boxBounds:
+      typeIdx: 3
+      value: {x: 1.000000, y: 1.000000}
+    cornerRadius:
+      typeIdx: 1
+      value: 0.030000
+    strokeColor:
+      typeIdx: 5
+      value: {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
+    strokeThickness:
+      typeIdx: 1
+      value: 0.000000
+  Pass: !<reference> 82e1c65c-560a-4dfe-9968-47ce6b003581

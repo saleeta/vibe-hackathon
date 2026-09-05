@@ -1,9 +1,9 @@
-# Spectacles / Lens Studio compliance notes for Person B
+# Spectacles / Lens Studio compliance notes for the nutrition pipeline
 
 Not a legal review — practical points to keep the pipeline reviewable and
 shippable on Spectacles.
 
-- **Camera frames leave the device.** Person A's `HttpFoodAnalysisClient`
+- **Camera frames leave the device.** `HttpFoodAnalysisClient`
   sends a captured HQ frame to `api/`'s `/v1/analyze` endpoint over HTTPS
   (`InternetModule`). That's a network capability that must be
   declared/requested per Lens Studio's project capability requirements for
@@ -11,11 +11,14 @@ shippable on Spectacles.
   `backendUrl` actually configured. Don't silently add a second, undeclared
   network destination later without updating that.
 - **Minimize what leaves the device.** Only the single HQ frame needed for
-  recognition is sent, not a continuous video stream — enforced on Person
-  A's side by `EatingTrigger` (one `analyze()` call per confirmed
-  `EATING_EVENT`, a `busy` guard against overlap, and A4's `cooldownMs`
-  against re-triggering the same bite) and on Person B's side by B1/B2 both
-  operating on that one still image, never a live feed.
+  recognition is sent, not a continuous video stream — enforced on the
+  perception side by `EatingTrigger` (one `analyze()` call per **eating
+  session**, not per bite — a `busy` guard against overlap, the eating-event
+  detector's `cooldownMs` against re-triggering the same bite, and
+  `EatingTrigger`'s own `sessionGapMs` suppressing further backend calls for
+  the rest of a multi-bite meal) and on the nutrition side by food
+  recognition/portion estimation both operating on that one still image,
+  never a live feed.
 - **No always-on recording implied.** Nothing in this pipeline starts a
   Spectacles hardware recording; see `SCREEN_RECORDING.md` — recording stays
   user-initiated via the physical button, which is the compliant default for
@@ -51,21 +54,24 @@ shippable on Spectacles.
   diabetics (not just an estimate), that means integrating a real glucose
   sensor/device API, not extrapolating further from food photos.
 - **`api/`'s vision backend sends photos to a third party.**
-  `ClaudeVisionClassifier` sends the full image to Anthropic's API over HTTPS
-  to identify food and estimate portions — this is real third-party data
-  transmission, not hypothetical, whenever `/v1/food/classify` or
-  `/v1/analyze` is called. That's consistent with the "camera frames leave
-  the device" point above for the live-Spectacles path, but worth restating
-  because `test-images/` photos are whatever the user drops in that folder —
-  don't put images there that shouldn't be sent to Anthropic's API. Check
-  Anthropic's API terms/data-handling policy before sending anything
-  sensitive, and see the "minimize what leaves the device" point above — the
-  same one-frame-per-event principle should hold for any real deployment.
+  `OpenRouterVisionClassifier` sends the full image to OpenRouter (routed to
+  whatever model is configured, currently `google/gemma-4-31b-it:free`) over
+  HTTPS to identify food and estimate portions — this is real third-party
+  data transmission, not hypothetical, whenever `/v1/food/classify` or
+  `/v1/analyze` is called, and a free-tier model may have different
+  data-retention terms than a paid one. That's consistent with the "camera
+  frames leave the device" point above for the live-Spectacles path, but
+  worth restating because `test-images/` photos are whatever the user drops
+  in that folder — don't put images there that shouldn't be sent to
+  OpenRouter/the underlying model provider. Check the relevant terms/
+  data-handling policy before sending anything sensitive, and see the
+  "minimize what leaves the device" point above — the same one-frame-per-event
+  principle should hold for any real deployment.
 - **No PII persistence built here.** This pipeline as written doesn't
   persist images or eating history anywhere — `api/`'s `/v1/analyze`
   computes and returns a result per request with nothing written to disk or
-  a database, and the Lens-side display (`AutoLogDisplay`/`NutritionHUD`)
-  only shows-then-fades. If a server-side store of a user's eating history
+  a database, and the Lens-side display (`NutritionHUD`) only
+  shows-then-fades. If a server-side store of a user's eating history
   gets added later, that's health-adjacent personal data and should get its
   own privacy/retention review before shipping — flagging now so it isn't
   missed later.

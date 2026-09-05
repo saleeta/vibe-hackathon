@@ -1,0 +1,53 @@
+- !<AssetImportMetadata/7e688c63-f301-eada-8879-9184e5b06e7e>
+  ImportedAssetIds:
+    JavaScriptAsset: !<reference> b12fe448-c6dc-4951-a5dc-07e21f2f5f5c
+  ImporterName: JavaScriptAssetImporter
+  PrimaryAsset: !<reference> b12fe448-c6dc-4951-a5dc-07e21f2f5f5c
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    JavaScriptAsset: !<own> 67ff1c8c-aa72-44a6-919f-bc818ad15c39
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<ScriptAssetData/67ff1c8c-aa72-44a6-919f-bc818ad15c39>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: |
+    This script calls the API to get the information for the current day and multiple days of forecasting. It then presents that data through UIWeatherDays.
+
+  VersionMajor: 1
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: a7668fce-468a-1db0-674f-49d69a1fc6c3
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    accuweatherAPI: false
+    city: false
+    loadingObject: false
+    loadingTime: false
+    uiWeatherDays: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - accuweatherAPI: !<reference.ScriptComponent> 00000000-0000-0000-0000-000000000000
+      city: ""
+      uiWeatherDays: !<reference.ScriptComponent[]>
+        []
+      loadingObject: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      loadingTime: 0.150000
+  ScriptTypes:
+    -
+      {}

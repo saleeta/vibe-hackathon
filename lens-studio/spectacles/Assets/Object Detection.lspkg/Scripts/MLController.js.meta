@@ -1,0 +1,56 @@
+- !<AssetImportMetadata/020e8056-47b8-2d65-eb0a-34dc71f6a4f3>
+  ImportedAssetIds:
+    JavaScriptAsset: !<reference> 50052e60-dc6a-4b4a-92cf-f32ed19273f5
+  ImporterName: JavaScriptAssetImporter
+  PrimaryAsset: !<reference> 50052e60-dc6a-4b4a-92cf-f32ed19273f5
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    JavaScriptAsset: !<own> 78a66f61-57df-413e-a66f-9b075a0692e3
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<ScriptAssetData/78a66f61-57df-413e-a66f-9b075a0692e3>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: 185cf3c3-e7d4-9382-87c4-7246e491cd0d
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    advanced: false
+    confidenceThreshold: false
+    loader: false
+    mlComponent: false
+    nmsThreshold: false
+    outputCls: false
+    outputLoc: false
+    topK: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - mlComponent: !<reference.MLComponent> 00000000-0000-0000-0000-000000000000
+      advanced: false
+      outputCls: cls
+      outputLoc: loc
+      confidenceThreshold: 0.450000
+      nmsThreshold: 0.450000
+      topK: 10
+      loader: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+  ScriptTypes:
+    -
+      {}
