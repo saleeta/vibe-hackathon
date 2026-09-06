@@ -1,20 +1,20 @@
-- !<AssetImportMetadata/b27d8cb1-54cc-4f86-9ec0-69db3d8b0273>
+- !<AssetImportMetadata/9e9cb307-c047-4d97-8c30-80796631cb99>
   ImportedAssetIds:
-    TypeScriptAsset: !<reference> 8c0b2ecd-6afc-4002-a05f-0a58c8927ed3
+    TypeScriptAsset: !<reference> 6f0cca64-7e4d-454f-b211-698bd06dfe2e
   ImporterName: TypeScriptAssetImporter
-  PrimaryAsset: !<reference> 8c0b2ecd-6afc-4002-a05f-0a58c8927ed3
+  PrimaryAsset: !<reference> 6f0cca64-7e4d-454f-b211-698bd06dfe2e
   PackageType: NotAPackage
   LegacyPackagePolicy: ~
   ExtraData:
     {}
   AssetDataMap:
-    TypeScriptAsset: !<own> 5f97d623-ec18-44f0-92d0-a542366818c2
+    TypeScriptAsset: !<own> 0c4ea3ae-c9e2-485e-bbda-fdc2812d90c9
   DependentFiles:
     []
   ImporterSettings: !<AssetImporterSettings>
     {}
   CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
-- !<TypeScriptAssetData/5f97d623-ec18-44f0-92d0-a542366818c2>
+- !<TypeScriptAssetData/0c4ea3ae-c9e2-485e-bbda-fdc2812d90c9>
   SvgIcon: ""
   SetupScript:
     code: ""
@@ -22,11 +22,11 @@
   VersionMajor: 0
   VersionMinor: 0
   VersionPatch: 0
-  ComponentUid: f74bb1f0-dff0-4cc1-ba07-99a72f017f1b
+  ComponentUid: 0c36f381-c91a-4699-bbbd-cad08e855bdd
   ExportUid: 00000000-0000-0000-0000-000000000000
   PackagePolicy: CanBeUnpacked
   ScriptInputsHidden:
-    requireFoodInHand: false
+    {}
   ScriptTypesHidden:
     {}
   ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
@@ -36,9 +36,10 @@
   Attachments:
     []
   DefaultScriptInputs:
-    - requireFoodInHand: true
+    -
+      {}
   ScriptTypes:
     -
       {}
   InputLines:
-    - '// @input bool requireFoodInHand = true {"hint":"When on, the nutrition breakdown only runs if Gemini says at least one food is held in a hand (or in a hand-held plate/bowl/cup). Turn off for testing without holding anything."}'
+    []

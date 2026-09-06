@@ -47,4 +47,4 @@
   InputLines:
     - '// @input float minDwellFoodInHandMs = 200 {"hint":"How long food must be continuously confirmed in-hand before it counts as an eating event."}'
     - '// @input float staleTimeoutMs = 1500 {"hint":"Any state times out back to NOT_EATING if its condition stops holding for this long."}'
-    - '// @input float cooldownMs = 4000 {"hint":"Minimum time between two EATING_EVENTs, so one hold is not double-counted."}'
+    - '// @input float cooldownMs = 2000 {"hint":"Minimum time between two EATING_EVENTs, so one continuous hold is not counted as many bites."}'

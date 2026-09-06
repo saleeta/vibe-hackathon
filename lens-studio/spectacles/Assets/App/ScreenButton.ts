@@ -5,20 +5,21 @@ import { AppEvents } from './Core/AppEvents';
 /**
  * A screen-space button that works without SpectaclesInteractionKit's
  * Interactable + PhysicsCollider setup — deliberately avoided here since
- * this project has no tested path to wire that up blind. Instead: a hand
- * "hovers" this button when its index fingertip's camera-projected screen
- * position falls inside the button Text's own ScreenTransform rect
- * (`Camera.worldSpaceToScreenSpace`, confirmed [0,1] top-left-origin), and
- * a pinch fires `AppEvents.onButtonPressed(buttonId)` if the hand was
- * hovering within the last `hoverGraceMs` — not just at the exact instant
- * the pinch event lands, since a real pinch pulls the fingertip slightly
- * and can flicker hover false right as the gesture completes.
+ * this project has no tested path to wire that up blind, and its
+ * world-space content isn't composited to the Spectacles display (only the
+ * Orthographic/Canvas layer is). Instead: a hand "hovers" this button when
+ * its index fingertip's camera-projected screen position falls inside the
+ * button Text's own ScreenTransform rect (`Camera.worldSpaceToScreenSpace`,
+ * [0,1] top-left-origin), and a pinch fires
+ * `AppEvents.onButtonPressed(buttonId)` if the hand was hovering within the
+ * last `hoverGraceMs` — not just at the instant the pinch lands, since a
+ * real pinch pulls the fingertip slightly and can flicker hover false right
+ * as the gesture completes.
  *
- * Feedback uses `Text.textFill.color` (the same property
- * `UI/NutritionHUD.ts`'s fade already proven to read/write at runtime),
- * not `Text.backgroundSettings` — that API has never been confirmed safe
- * to touch at runtime in this project and previously broke this file's
- * entire `onAwake()` when it threw.
+ * The visible panel is the button Text's Background fill (set at edit time,
+ * never touched at runtime). Runtime feedback is on `Text.textFill.color`
+ * (the property `UI/NutritionHUD.ts`'s fade already proves safe to
+ * read/write), plus an optional click `AudioComponent`.
  */
 @component
 export class ScreenButton extends BaseScriptComponent {
@@ -40,6 +41,15 @@ export class ScreenButton extends BaseScriptComponent {
   @hint('How long (ms) the bright "pressed" flash lasts before reverting to the normal/hover text color.')
   pressFlashMs: number = 200;
 
+  @input
+  @allowUndefined
+  @hint('Optional click sound played once per press.')
+  clickSound: AudioTrackAsset;
+
+  @input
+  @hint('Print a per-second [FitLens:Button] line with the fingertip screen pos vs this button\'s rect. Off by default — six buttons at 1 Hz floods the log.')
+  showDiagnostics: boolean = false;
+
   private screenTransform: ScreenTransform;
   private gestureModule: GestureModule = require('LensStudio:GestureModule');
   private isHovering = false;
@@ -48,6 +58,7 @@ export class ScreenButton extends BaseScriptComponent {
 
   private baseColor: vec4 | null = null;
   private flashUntilMillis = 0;
+  private audio: AudioComponent | null = null;
 
   onAwake(): void {
     this.screenTransform = this.buttonText.getSceneObject().getComponent('Component.ScreenTransform');
@@ -58,9 +69,6 @@ export class ScreenButton extends BaseScriptComponent {
     this.createEvent('UpdateEvent').bind(() => this.onUpdateFlash());
     print(`[FitLens:Button] "${this.buttonId}" initialized. worldCamera=${!!this.worldCamera} screenTransform=${!!this.screenTransform}`);
 
-    // textFill is the same proven-safe property NutritionHUD.setOpacity already
-    // mutates at runtime — captured defensively anyway, since nothing here should
-    // be able to take the press-detection wiring above down with it.
     try {
       const fill = (this.buttonText as any).textFill;
       if (fill?.color) {
@@ -70,10 +78,38 @@ export class ScreenButton extends BaseScriptComponent {
     } catch (err) {
       print(`[FitLens:Button] "${this.buttonId}" — textFill unreadable, no color feedback: ${err}`);
     }
+
+    if (this.clickSound) {
+      this.audio = this.sceneObject.createComponent('Component.AudioComponent') as AudioComponent;
+      this.audio.audioTrack = this.clickSound;
+    }
+  }
+
+  /**
+   * True only if this button AND every ancestor is enabled. `SceneObject.enabled`
+   * is the object's OWN flag — a button under a disabled `GymMenuRoot` still
+   * reports `enabled: true` itself, so without walking up it would keep eating
+   * pinches (and firing navigation) while invisible on another mode's screen.
+   * The hand/pinch callbacks come off global event buses, not the UpdateEvent,
+   * so LS's own "disabled objects don't tick" rule doesn't cover them.
+   */
+  private isPageActive(): boolean {
+    let o: SceneObject | null = this.getSceneObject();
+    for (let depth = 0; o && depth < 32; depth++) {
+      if (!o.enabled) return false;
+      o = o.getParent();
+    }
+    return true;
   }
 
   private onHands(snapshot: HandsSnapshot): void {
-    if (!this.worldCamera || !this.getSceneObject().enabled) return;
+    if (!this.worldCamera || !this.isPageActive()) {
+      if (this.isHovering) {
+        this.isHovering = false;
+        this.applyColor();
+      }
+      return;
+    }
     const hands: HandState[] = [snapshot.left, snapshot.right];
     let hovering = false;
     let closestScreenPoint: vec2 | null = null;
@@ -90,7 +126,7 @@ export class ScreenButton extends BaseScriptComponent {
     const nowMillis = getTime() * 1000;
     if (hovering) this.lastHoverTrueMillis = nowMillis;
 
-    if (closestScreenPoint && nowMillis - this.lastDiagnosticMillis > 1000) {
+    if (this.showDiagnostics && closestScreenPoint && nowMillis - this.lastDiagnosticMillis > 1000) {
       this.lastDiagnosticMillis = nowMillis;
       const a = this.screenTransform.anchors;
       print(
@@ -116,12 +152,13 @@ export class ScreenButton extends BaseScriptComponent {
   }
 
   private onPinch(): void {
-    if (!this.getSceneObject().enabled) return;
+    if (!this.isPageActive()) return;
     const nowMillis = getTime() * 1000;
     const recentlyHovering = this.isHovering || nowMillis - this.lastHoverTrueMillis < this.hoverGraceMs;
     if (!recentlyHovering) return;
 
     print(`[FitLens:Button] "${this.buttonId}" pressed.`);
+    if (this.audio) this.audio.play(1);
     this.flashUntilMillis = nowMillis + this.pressFlashMs;
     this.applyColor();
     AppEvents.onButtonPressed.invoke(this.buttonId);

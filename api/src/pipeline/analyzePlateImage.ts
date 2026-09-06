@@ -24,6 +24,7 @@ import { NutritionClient } from "../../../lens-studio/spectacles/Assets/Nutritio
 import { EatingSessionManager, ObservationInput } from "../../../lens-studio/spectacles/Assets/Nutrition/EatingSessionManager";
 import { ConfidenceAggregator } from "../../../lens-studio/spectacles/Assets/Nutrition/ConfidenceAggregator";
 import { EatingSession, MealSummary } from "../../../lens-studio/spectacles/Assets/Nutrition/Types";
+import { mealNutriProfile, microsByFood } from "../../../lens-studio/spectacles/Assets/Nutrition/NutriProfile";
 
 export interface AnalyzePlateImageDeps {
   foodRecognition: FoodRecognitionService;
@@ -94,6 +95,12 @@ export async function analyzePlateImage(
   const eatingConfidence = eventContext.detectionConfidence ?? 1;
   const confidence = ConfidenceAggregator.forSession(session.items, eatingConfidence);
 
+  // Micronutrients + Nutri-Score grade for the primary food. Same shared helper
+  // the on-device path (Capture/GeminiFoodAnalysisClient) uses, so both grade a
+  // food identically.
+  const primaryFood = [...session.items].sort((a, b) => b.weightG - a.weightG)[0]?.food ?? "unknown";
+  const { micros, nutriScore } = mealNutriProfile(mealItems, microsByFood(recognizedItems), primaryFood);
+
   return {
     sessionId: session.id,
     startedSec: session.startedSec,
@@ -102,5 +109,7 @@ export async function analyzePlateImage(
     totals,
     confidence,
     glycemicEstimate,
+    micros,
+    nutriScore,
   };
 }

@@ -1,6 +1,6 @@
 import { WorkoutEvents } from '../Core/WorkoutEvents';
 import { AppEvents } from '../../App/Core/AppEvents';
-import { GymExercise } from '../../App/Core/AppTypes';
+import { AppMode, GymExercise } from '../../App/Core/AppTypes';
 
 /**
  * MVP gamification for the curl tracker: Chrome's offline dino-runner game,
@@ -27,12 +27,19 @@ export class DinoGame extends BaseScriptComponent {
   obstacleText: Text;
 
   @input
+  @allowUndefined
   @hint('Optional — running survival score.')
-  scoreText: Text | null = null;
+  scoreText: Text;
 
   @input
-  @hint('Optional — "Game Over" prompt, shown on collision and hidden again on restart.')
-  statusText: Text | null = null;
+  @allowUndefined
+  @hint('Optional — status line. Currently unused (kept so existing scene wiring does not break).')
+  statusText: Text;
+
+  @input
+  @allowUndefined
+  @hint('Optional — the panel/board background SceneObject (a screen-space Text with a fill), shown/hidden with the game so it reads as a framed play area.')
+  board: SceneObject;
 
   @input
   @hint('Normalized [0-1] Y where the dino\'s feet rest (top-left origin).')
@@ -64,7 +71,6 @@ export class DinoGame extends BaseScriptComponent {
   private isJumping = false;
   private jumpStartMillis = 0;
   private score = 0;
-  private isGameOver = false;
   private isActive = false;
 
   onAwake(): void {
@@ -73,6 +79,9 @@ export class DinoGame extends BaseScriptComponent {
 
     WorkoutEvents.onCurlUp.add(() => this.onCurl());
     AppEvents.onGymExerciseChanged.add((exercise) => this.setActive(exercise === GymExercise.Curls));
+    AppEvents.onModeChanged.add((mode) => {
+      if (mode !== AppMode.Gym) this.setActive(false); // leaving Gym always tears the game down
+    });
     this.createEvent('UpdateEvent').bind(() => this.onUpdate());
 
     this.resetRound();
@@ -84,17 +93,14 @@ export class DinoGame extends BaseScriptComponent {
     this.isActive = active;
     this.dinoText.getSceneObject().enabled = active;
     this.obstacleText.getSceneObject().enabled = active;
+    if (this.board) this.board.enabled = active;
     if (this.scoreText) this.scoreText.getSceneObject().enabled = active;
-    if (this.statusText) this.statusText.getSceneObject().enabled = active && this.isGameOver;
+    if (this.statusText) this.statusText.getSceneObject().enabled = false;
     if (active) this.resetRound();
   }
 
   private onCurl(): void {
     if (!this.isActive) return;
-    if (this.isGameOver) {
-      this.restart();
-      return;
-    }
     this.jump();
   }
 
@@ -105,13 +111,7 @@ export class DinoGame extends BaseScriptComponent {
     print('[FitLens:DinoGame] Jump.');
   }
 
-  private restart(): void {
-    this.resetRound();
-    print('[FitLens:DinoGame] Restarted.');
-  }
-
   private resetRound(): void {
-    this.isGameOver = false;
     this.score = 0;
     this.obstacleX = 1.1;
     if (this.statusText) this.statusText.getSceneObject().enabled = false;
@@ -119,7 +119,7 @@ export class DinoGame extends BaseScriptComponent {
   }
 
   private onUpdate(): void {
-    if (!this.isActive || this.isGameOver) return;
+    if (!this.isActive) return;
     const dt = Math.max(getDeltaTime(), 1 / 240);
 
     // A simple symmetric up-then-down tween — no physics engine needed for MVP.
@@ -139,17 +139,9 @@ export class DinoGame extends BaseScriptComponent {
       if (this.scoreText) this.scoreText.text = `Score: ${this.score}`;
     }
 
-    // Collision: obstacle overlaps the dino's x-range while the dino hasn't jumped clear of it.
-    const xOverlap = Math.abs(this.obstacleX - this.dinoX) < this.spriteHalfWidth * 1.8;
-    const stillGrounded = dinoY > this.groundY - this.spriteHalfHeight * 1.5;
-    if (xOverlap && stillGrounded) {
-      this.isGameOver = true;
-      if (this.statusText) {
-        this.statusText.text = 'Game Over — curl to restart';
-        this.statusText.getSceneObject().enabled = true;
-      }
-      print('[FitLens:DinoGame] Collision — game over.');
-    }
+    // No collision / no game-over: a curl always just makes the dino hop, and the
+    // obstacle loops forever. The game-over + "curl to restart" flow was removed
+    // since the dino sprites aren't visible on this device anyway.
 
     this.applySprite(this.dinoTransform, this.dinoX, dinoY);
     this.applySprite(this.obstacleTransform, this.obstacleX, this.groundY);

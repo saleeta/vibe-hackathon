@@ -1,20 +1,20 @@
-- !<AssetImportMetadata/262dc1c8-09df-4e51-ba12-8fd8b9926d0f>
+- !<AssetImportMetadata/fe6f84ae-e83b-45a5-a126-fd28809a1ee2>
   ImportedAssetIds:
-    TypeScriptAsset: !<reference> 3e3b3450-35d4-4fa5-9352-9b1f9f351187
+    TypeScriptAsset: !<reference> 2c91baeb-ce54-431b-9615-164435bc10ed
   ImporterName: TypeScriptAssetImporter
-  PrimaryAsset: !<reference> 3e3b3450-35d4-4fa5-9352-9b1f9f351187
+  PrimaryAsset: !<reference> 2c91baeb-ce54-431b-9615-164435bc10ed
   PackageType: NotAPackage
   LegacyPackagePolicy: ~
   ExtraData:
     {}
   AssetDataMap:
-    TypeScriptAsset: !<own> 2e8179ba-ec0b-4cc5-a178-bb1351588a56
+    TypeScriptAsset: !<own> 5dd96691-29d1-4dd6-b4a7-783a7723b84d
   DependentFiles:
     []
   ImporterSettings: !<AssetImporterSettings>
     {}
   CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
-- !<TypeScriptAssetData/2e8179ba-ec0b-4cc5-a178-bb1351588a56>
+- !<TypeScriptAssetData/5dd96691-29d1-4dd6-b4a7-783a7723b84d>
   SvgIcon: ""
   SetupScript:
     code: ""
@@ -22,14 +22,16 @@
   VersionMajor: 0
   VersionMinor: 0
   VersionPatch: 0
-  ComponentUid: ab754992-edea-4b74-92fe-921d71792f8c
+  ComponentUid: 2f84c53b-28a6-4a15-a1b8-7ecf00f4c6c9
   ExportUid: 00000000-0000-0000-0000-000000000000
   PackagePolicy: CanBeUnpacked
   ScriptInputsHidden:
     buttonId: false
     buttonText: false
+    clickSound: false
     hoverGraceMs: false
     pressFlashMs: false
+    showDiagnostics: false
     worldCamera: false
   ScriptTypesHidden:
     {}
@@ -45,6 +47,8 @@
       worldCamera: !<reference.Camera> 00000000-0000-0000-0000-000000000000
       hoverGraceMs: !<float> 350.000000
       pressFlashMs: !<float> 200.000000
+      clickSound: !<reference.AudioTrackAsset> 00000000-0000-0000-0000-000000000000
+      showDiagnostics: false
   ScriptTypes:
     -
       {}
@@ -54,3 +58,5 @@
     - // @input Component.Camera worldCamera
     - '// @input float hoverGraceMs = 350 {"hint":"A pinch still counts if the hand was hovering this button within the last N ms — covers the pinch motion itself nudging the fingertip out of the rect."}'
     - '// @input float pressFlashMs = 200 {"hint":"How long (ms) the bright \"pressed\" flash lasts before reverting to the normal/hover text color."}'
+    - '// @input Asset.AudioTrackAsset clickSound {"hint":"Optional click sound played once per press."}'
+    - "// @input bool showDiagnostics {\"hint\":\"Print a per-second [FitLens:Button] line with the fingertip screen pos vs this button's rect. Off by default — six buttons at 1 Hz floods the log.\"}"

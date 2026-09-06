@@ -26,7 +26,7 @@
   ExportUid: 00000000-0000-0000-0000-000000000000
   PackagePolicy: CanBeUnpacked
   ScriptInputsHidden:
-    cardDepthM: false
+    cardBackground: false
     cardRoot: false
     confidenceText: false
     displayDurationMs: false
@@ -34,7 +34,7 @@
     glycemicText: false
     headlineText: false
     macrosText: false
-    worldCamera: false
+    nutriScoreText: false
   ScriptTypesHidden:
     {}
   ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
@@ -45,24 +45,24 @@
     []
   DefaultScriptInputs:
     - cardRoot: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
-      worldCamera: !<reference.Camera> 00000000-0000-0000-0000-000000000000
-      cardDepthM: 0.500000
       headlineText: !<reference.Text> 00000000-0000-0000-0000-000000000000
       macrosText: !<reference.Text> 00000000-0000-0000-0000-000000000000
       glycemicText: !<reference.Text> 00000000-0000-0000-0000-000000000000
       confidenceText: !<reference.Text> 00000000-0000-0000-0000-000000000000
+      nutriScoreText: !<reference.Text> 00000000-0000-0000-0000-000000000000
+      cardBackground: !<reference.Text> 00000000-0000-0000-0000-000000000000
       displayDurationMs: !<float> 4000.000000
       fadeOutMs: !<float> 500.000000
   ScriptTypes:
     -
       {}
   InputLines:
-    - '// @input SceneObject cardRoot {"hint":"The Billboard-rotated parent of all the card text — this is what gets pinned in world space. Add a Billboard component (SIK) to it separately."}'
-    - // @input Component.Camera worldCamera
-    - "// @input float cardDepthM = 0.5 {\"hint\":\"Distance in front of the camera (meters) to pin the card, projected through the detected food's screen position.\"}"
+    - '// @input SceneObject cardRoot {"hint":"Container SceneObject for all the card text + background. Just toggled on/off — no positioning done here."}'
     - // @input Component.Text headlineText
-    - '// @input Component.Text macrosText {"hint":"Optional — protein/carbs/fat line. Only shown after a pinch expands the card."}'
+    - '// @input Component.Text macrosText {"hint":"Optional — protein/carbs/fat + micros lines. Only shown after a pinch expands the card."}'
     - '// @input Component.Text glycemicText {"hint":"Optional — estimated glycemic load + category. Always labeled as an estimate, never \"blood sugar\". Only shown expanded."}'
     - '// @input Component.Text confidenceText {"hint":"Optional — confidence breakdown, small/muted text. Only shown expanded."}'
-    - // @input float displayDurationMs = 4000
+    - '// @input Component.Text nutriScoreText {"hint":"Optional — one-line Nutri-Score grade (\"Nutri-Score: C\"). Shown whenever a grade is available, compact or expanded."}'
+    - "// @input Component.Text cardBackground {\"hint\":\"Optional — a Text with Background enabled sitting behind the card. Its background fill is tinted to the food's Nutri-Score colour (green A → red E).\"}"
+    - // @input float displayDurationMs = 6000
     - // @input float fadeOutMs = 500

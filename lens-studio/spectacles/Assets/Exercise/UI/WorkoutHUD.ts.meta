@@ -26,10 +26,9 @@
   ExportUid: 00000000-0000-0000-0000-000000000000
   PackagePolicy: CanBeUnpacked
   ScriptInputsHidden:
-    caloriesText: false
-    curlsText: false
-    squatsText: false
-    stepsText: false
+    background: false
+    detailText: false
+    headlineText: false
   ScriptTypesHidden:
     {}
   ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
@@ -39,15 +38,13 @@
   Attachments:
     []
   DefaultScriptInputs:
-    - stepsText: !<reference.Text> 00000000-0000-0000-0000-000000000000
-      squatsText: !<reference.Text> 00000000-0000-0000-0000-000000000000
-      curlsText: !<reference.Text> 00000000-0000-0000-0000-000000000000
-      caloriesText: !<reference.Text> 00000000-0000-0000-0000-000000000000
+    - headlineText: !<reference.Text> 00000000-0000-0000-0000-000000000000
+      detailText: !<reference.Text> 00000000-0000-0000-0000-000000000000
+      background: !<reference.Text> 00000000-0000-0000-0000-000000000000
   ScriptTypes:
     -
       {}
   InputLines:
-    - // @input Component.Text stepsText
-    - // @input Component.Text squatsText
-    - // @input Component.Text curlsText
-    - '// @input Component.Text caloriesText {"hint":"Optional — rough calorie estimate. See WorkoutManager.estimateKcal for the caveat."}'
+    - '// @input Component.Text headlineText {"hint":"Top line — the rep/step count, e.g. \"Squats: 12\"."}'
+    - '// @input Component.Text detailText {"hint":"Second line — the derived metric(s) for the picked exercise, e.g. \"~53 m · ~4 kcal\"."}'
+    - '// @input Component.Text background {"hint":"Optional — the card background: a Text with Background enabled and empty text, sized to sit behind both lines. Hidden with the text when no exercise is picked."}'

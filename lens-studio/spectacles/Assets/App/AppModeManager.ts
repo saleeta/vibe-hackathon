@@ -32,6 +32,11 @@ export class AppModeManager extends BaseScriptComponent {
   @hint('Root containing WorkoutHUD + DinoGame. WorkoutHUD/DinoGame further self-filter to only the picked exercise via AppEvents.onGymExerciseChanged.')
   gymUIRoot: SceneObject;
 
+  @input
+  @allowUndefined
+  @hint('Optional root holding a single shared Back button — shown in every mode except Landing so Health mode has a way out too.')
+  navBackRoot: SceneObject;
+
   private mode: AppMode = AppMode.Landing;
   private exercise: GymExercise = GymExercise.None;
 
@@ -85,5 +90,6 @@ export class AppModeManager extends BaseScriptComponent {
     this.foodUIRoot.enabled = this.mode === AppMode.Food;
     this.gymMenuRoot.enabled = this.mode === AppMode.Gym;
     this.gymUIRoot.enabled = this.mode === AppMode.Gym;
+    if (this.navBackRoot) this.navBackRoot.enabled = this.mode !== AppMode.Landing;
   }
 }

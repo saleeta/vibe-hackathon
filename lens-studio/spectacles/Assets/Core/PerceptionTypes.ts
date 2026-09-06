@@ -107,6 +107,28 @@ export interface FoodAnalysisResult {
   glycemicLoad?: number;
   glycemicCategory?: 'low' | 'medium' | 'high';
 
+  /**
+   * Vision-estimated micronutrients for this eating event, summed across items
+   * (per serving, not per 100g). Present only when the vision backend returned
+   * them — they feed the Nutri-Score below and the expanded HUD card.
+   */
+  sugarsG?: number;
+  satFatG?: number;
+  sodiumMg?: number;
+  fiberG?: number;
+
+  /**
+   * Nutri-Score grade (A–E) for the primary food, from Nutrition/NutriScore.ts.
+   * A food-composition estimate, not a health verdict — same framing as
+   * glycemicLoad. `color` is the official grade colour, linear 0–1 RGB, used to
+   * tint the HUD card.
+   */
+  nutriScore?: {
+    grade: 'A' | 'B' | 'C' | 'D' | 'E';
+    points: number;
+    color: { r: number; g: number; b: number };
+  };
+
   /** Confidence breakdown, in case a display wants more than the single overall `confidence` above. */
   foodConfidence?: number;
   portionConfidence?: number;

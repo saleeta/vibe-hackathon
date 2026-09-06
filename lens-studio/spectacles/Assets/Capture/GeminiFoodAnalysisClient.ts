@@ -9,6 +9,7 @@ import { ConfidenceAggregator } from '../Nutrition/ConfidenceAggregator';
 import { EatingSession } from '../Nutrition/Types';
 import { lookupFood } from '../Nutrition/NutritionLookup';
 import { scaleNutrition, sumNutrition, classifyGlycemicLoad } from '../Nutrition/NutritionScale';
+import { mealNutriProfile, microsByFood } from '../Nutrition/NutriProfile';
 
 /**
  * Fully Lens-side implementation of IFoodAnalysisClient: runs the whole
@@ -29,6 +30,10 @@ import { scaleNutrition, sumNutrition, classifyGlycemicLoad } from '../Nutrition
  */
 @component
 export class GeminiFoodAnalysisClient extends BaseScriptComponent implements IFoodAnalysisClient {
+  @input
+  @hint('When on, the nutrition breakdown only runs if Gemini says at least one food is held in a hand (or in a hand-held plate/bowl/cup). Turn off for testing without holding anything.')
+  requireFoodInHand: boolean = true;
+
   private readonly classifier = new GeminiVisionClassifier();
   private readonly foodRecognition = new FoodRecognitionService(this.classifier);
 
@@ -42,9 +47,23 @@ export class GeminiFoodAnalysisClient extends BaseScriptComponent implements IFo
     const imageBase64 = await encodeTextureToBase64Jpeg(frame);
     print(`[FoodLens:Encode] Encoded to base64 (${imageBase64.length} chars).`);
 
-    const recognizedItems = await this.foodRecognition.recognize(imageBase64, undefined, context.food_object);
+    let recognizedItems = await this.foodRecognition.recognize(imageBase64, undefined, context.food_object);
     if (recognizedItems.length === 0) {
       throw new Error('No food recognized in this image with enough confidence');
+    }
+
+    // Gemini is the "food in hand" gate: drop foods it explicitly said are NOT
+    // held (a plate on the table in the background), but keep anything it marked
+    // held OR left unanswered — so a quiet model never blocks a real result.
+    if (this.requireFoodInHand) {
+      const anyAnswered = recognizedItems.some((i) => typeof i.heldInHand === 'boolean');
+      const anyHeld = recognizedItems.some((i) => i.heldInHand === true);
+      if (anyAnswered && anyHeld) {
+        recognizedItems = recognizedItems.filter((i) => i.heldInHand !== false);
+      } else if (anyAnswered && !anyHeld) {
+        throw new Error('Food recognized but Gemini says none of it is in hand — skipping nutrition analysis');
+      }
+      // else: model didn't answer held/not-held for anything → proceed as-is.
     }
 
     // No hand/depth data for a single captured frame — use the vision
@@ -88,9 +107,15 @@ export class GeminiFoodAnalysisClient extends BaseScriptComponent implements IFo
     const confidence = ConfidenceAggregator.forSession(session.items, eatingConfidence);
 
     const primaryItem = [...session.items].sort((a, b) => b.weightG - a.weightG)[0];
+    const primaryFood = primaryItem?.food ?? 'unknown';
+
+    // Micronutrients + Nutri-Score — the local food table only carries macros +
+    // GI, so the per-100g micros come from the vision backend's estimate. Shared
+    // helper keeps this identical to api/src/pipeline/analyzePlateImage.ts.
+    const { micros, nutriScore } = mealNutriProfile(perItem, microsByFood(recognizedItems), primaryFood);
 
     return {
-      name: primaryItem?.food ?? 'unknown',
+      name: primaryFood,
       grams: session.items.reduce((sum, i) => sum + i.weightG, 0),
       kcal: totals.kcal,
       confidence: confidence.overall,
@@ -100,6 +125,11 @@ export class GeminiFoodAnalysisClient extends BaseScriptComponent implements IFo
       weightUncertaintyG: primaryItem?.weightUncertaintyG,
       glycemicLoad: totals.glycemicLoad,
       glycemicCategory,
+      sugarsG: micros.sugarsG,
+      satFatG: micros.satFatG,
+      sodiumMg: micros.sodiumMg,
+      fiberG: micros.fiberG,
+      nutriScore: { grade: nutriScore.grade, points: nutriScore.points, color: nutriScore.color },
       foodConfidence: confidence.foodConfidence,
       portionConfidence: confidence.portionConfidence,
       items: perItem.map((i) => ({ food: i.food, weightG: i.weightG, kcal: i.kcal, proteinG: i.proteinG, carbsG: i.carbsG, fatG: i.fatG })),

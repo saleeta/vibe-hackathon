@@ -18,7 +18,7 @@ import { appendMealLogEntry } from './MealLog';
  * meal) and needlessly increases exposure to any backend's rate limits.
  * `sessionGapMs` suppresses further backend calls until that much time has
  * passed since the last *successful* analysis — the next bite after that
- * gap starts a new session and gets analyzed again. Kept short (15s) rather
+ * gap starts a new session and gets analyzed again. Kept short (7s) rather
  * than matching `EatingSessionManager`'s full 3-minute meal-inactivity
  * window — that longer value made sense against a shared/free-tier vision
  * backend where every call mattered, but was frustrating to actually use or
@@ -40,24 +40,48 @@ export class EatingTrigger extends BaseScriptComponent {
 
   @input
   @hint('Once a bite is successfully analyzed, further bites within this many ms are treated as the same eating session and skip the backend call.')
-  sessionGapMs: number = 15000;
+  sessionGapMs: number = 7000;
 
   private get foodAnalysisClient(): IFoodAnalysisClient {
     return this.foodAnalysisClientComponent as unknown as IFoodAnalysisClient;
   }
 
   private busy = false;
+  private busySinceMs = 0;
   private lastAnalysisAtMs = -Infinity;
+  private lastSkipLogAtMs = -Infinity;
+
+  /** If an analyze() call hangs (no timeout on the vision request), don't let `busy` block every future event forever. */
+  private readonly busyWatchdogMs = 20000;
 
   onAwake(): void {
     PerceptionEvents.onEatingEvent.add((evt) => this.handleEatingEvent(evt));
   }
 
   private async handleEatingEvent(evt: { food_object: string; confidence: number; timestampMillis: number }) {
-    if (this.busy) return; // one in-flight analysis at a time is enough for the MVP
-    if (evt.timestampMillis - this.lastAnalysisAtMs < this.sessionGapMs) return; // same session as the last analyzed bite
+    const nowMs = getTime() * 1000;
+    if (this.busy) {
+      if (nowMs - this.busySinceMs > this.busyWatchdogMs) {
+        print('[FoodLens:Trigger] Previous analysis never returned — clearing the busy flag.');
+        this.busy = false;
+      } else {
+        if (nowMs - this.lastSkipLogAtMs > 3000) {
+          this.lastSkipLogAtMs = nowMs;
+          print('[FoodLens:Trigger] Skipped — an analysis is still in flight.');
+        }
+        return;
+      }
+    }
+    if (evt.timestampMillis - this.lastAnalysisAtMs < this.sessionGapMs) {
+      if (nowMs - this.lastSkipLogAtMs > 3000) {
+        this.lastSkipLogAtMs = nowMs;
+        print('[FoodLens:Trigger] Skipped — within the session cooldown since the last analysis.');
+      }
+      return;
+    }
 
     this.busy = true;
+    this.busySinceMs = nowMs;
     print('[FoodLens:Trigger] Capturing HQ frame and analyzing...');
     try {
       const hqTexture = await this.cameraSampler.captureHighQuality();

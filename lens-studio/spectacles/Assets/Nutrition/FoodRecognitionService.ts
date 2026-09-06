@@ -93,6 +93,8 @@ export class FoodRecognitionService {
           food: top.name,
           confidence: top.confidence,
           visionPortionEstimate: region.visionPortionEstimate,
+          visionMicros: region.visionMicros,
+          heldInHand: region.heldInHand,
         });
       }
     }

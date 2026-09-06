@@ -26,6 +26,7 @@
   ExportUid: 00000000-0000-0000-0000-000000000000
   PackagePolicy: CanBeUnpacked
   ScriptInputsHidden:
+    board: false
     dinoText: false
     groundY: false
     jumpDurationMs: false
@@ -49,6 +50,7 @@
       obstacleText: !<reference.Text> 00000000-0000-0000-0000-000000000000
       scoreText: !<reference.Text> 00000000-0000-0000-0000-000000000000
       statusText: !<reference.Text> 00000000-0000-0000-0000-000000000000
+      board: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
       groundY: 0.750000
       spriteHalfWidth: 0.030000
       spriteHalfHeight: 0.050000
@@ -62,7 +64,8 @@
     - // @input Component.Text dinoText
     - // @input Component.Text obstacleText
     - '// @input Component.Text scoreText {"hint":"Optional — running survival score."}'
-    - '// @input Component.Text statusText {"hint":"Optional — \"Game Over\" prompt, shown on collision and hidden again on restart."}'
+    - '// @input Component.Text statusText {"hint":"Optional — status line. Currently unused (kept so existing scene wiring does not break)."}'
+    - '// @input SceneObject board {"hint":"Optional — the panel/board background SceneObject (a screen-space Text with a fill), shown/hidden with the game so it reads as a framed play area."}'
     - "// @input float groundY = 0.75 {\"hint\":\"Normalized [0-1] Y where the dino's feet rest (top-left origin).\"}"
     - // @input float spriteHalfWidth = 0.03
     - // @input float spriteHalfHeight = 0.05

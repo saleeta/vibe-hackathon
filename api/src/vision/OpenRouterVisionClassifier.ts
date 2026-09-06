@@ -27,7 +27,7 @@ const MAX_HINT_LENGTH = 100;
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const MODEL = "google/gemma-4-31b-it:free";
 
-const SYSTEM_PROMPT = `You are the food-recognition stage of a calorie and nutrition tracker. Given a photo of food, identify every distinct food item visible (a single food, or several on a plate) and estimate each one's portion weight.
+const SYSTEM_PROMPT = `You are the food-recognition stage of a calorie and nutrition tracker. Given a photo of food, identify every distinct food item visible (a single food, or several on a plate), estimate each one's portion weight, and estimate its key nutrients per 100 g.
 
 Respond with ONLY valid JSON (no markdown fences, no prose) matching exactly this shape:
 {
@@ -37,7 +37,12 @@ Respond with ONLY valid JSON (no markdown fences, no prose) matching exactly thi
       "confidence": 0.96,
       "estimated_weight_g": 118,
       "portion_confidence": 0.72,
-      "bounding_box": { "x": 0.12, "y": 0.30, "width": 0.25, "height": 0.40 }
+      "bounding_box": { "x": 0.12, "y": 0.30, "width": 0.25, "height": 0.40 },
+      "sugars_g_per_100g": 12.2,
+      "sat_fat_g_per_100g": 0.1,
+      "sodium_mg_per_100g": 1,
+      "fibre_g_per_100g": 2.6,
+      "plant_percent": 100
     }
   ]
 }
@@ -48,6 +53,8 @@ Rules:
 - "estimated_weight_g" is your best-effort portion weight estimate in grams, reasoned from plate size, typical serving sizes, and any visible scale references.
 - "portion_confidence" (0-1) is how sure you are specifically about the weight estimate — usually lower than the identification confidence.
 - "bounding_box" is a best-effort NORMALIZED (0-1) region of that food in the image; approximate is fine.
+- "sugars_g_per_100g", "sat_fat_g_per_100g", "sodium_mg_per_100g", "fibre_g_per_100g": typical nutrient content per 100 g of this food (NOT per the portion shown), from standard food-composition knowledge. Sodium in milligrams; the rest in grams.
+- "plant_percent" (0-100): percentage of this item that is fruit, vegetable, legume, or nut. 100 for a whole fruit/vegetable, 0 for meat / plain bread / soda.
 - List every distinct food separately (a plate with rice, chicken, and broccoli is three entries, not one).
 - If you cannot identify any food in the image, return {"foods": []}.`;
 
@@ -57,6 +64,12 @@ interface VisionFoodEntry {
   estimated_weight_g: number;
   portion_confidence: number;
   bounding_box?: { x: number; y: number; width: number; height: number };
+  sugars_g_per_100g?: number;
+  sat_fat_g_per_100g?: number;
+  sodium_mg_per_100g?: number;
+  fibre_g_per_100g?: number;
+  plant_percent?: number;
+  held_in_hand?: boolean;
 }
 
 export class OpenRouterVisionClassifier implements FoodClassifierBackend {
@@ -123,6 +136,14 @@ export class OpenRouterVisionClassifier implements FoodClassifierBackend {
         estimatedWeightG: Math.max(0, f.estimated_weight_g ?? 0),
         confidence: clamp01(f.portion_confidence),
       },
+      visionMicros: {
+        sugarsG100: nonNegative(f.sugars_g_per_100g),
+        satFatG100: nonNegative(f.sat_fat_g_per_100g),
+        sodiumMg100: nonNegative(f.sodium_mg_per_100g),
+        fibreG100: nonNegative(f.fibre_g_per_100g),
+        plantPercent: clampPercent(f.plant_percent),
+      },
+      heldInHand: f.held_in_hand === true,
     }));
   }
 }
@@ -165,6 +186,15 @@ function normalizeFoodName(name: string): string {
 
 function clamp01(v: number): number {
   return Math.max(0, Math.min(1, v ?? 0));
+}
+
+function nonNegative(v: number | undefined): number {
+  return typeof v === "number" && isFinite(v) && v > 0 ? v : 0;
+}
+
+function clampPercent(v: number | undefined): number {
+  if (typeof v !== "number" || !isFinite(v)) return 0;
+  return Math.max(0, Math.min(100, v));
 }
 
 /** foodHint comes from an upstream classifier, not a trusted source — cap length before it goes into the prompt. */

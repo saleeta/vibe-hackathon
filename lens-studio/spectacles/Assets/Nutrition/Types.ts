@@ -49,11 +49,35 @@ export interface FoodRegionDetection {
    * as an alternative to PortionEstimator's hand-geometry math.
    */
   visionPortionEstimate?: VisionPortionEstimate;
+  /**
+   * Optional per-100g micronutrient estimate from the vision backend, for the
+   * Nutri-Score grade (Nutrition/NutriScore.ts). The local food table only
+   * carries macros + GI, so these come from the model's visual estimate.
+   */
+  visionMicros?: VisionMicros;
+  /**
+   * Whether the vision backend judged this specific food to be held in / touched
+   * by a visible hand. Used by the live Lens path (Capture/GeminiFoodAnalysisClient)
+   * as the real "food in hand" gate — a plate in the background never gets a
+   * nutrition card. Undefined for backends that don't report it (e.g. the
+   * test-photo path, where "in hand" doesn't apply).
+   */
+  heldInHand?: boolean;
 }
 
 export interface VisionPortionEstimate {
   estimatedWeightG: number;
   confidence: number;
+}
+
+/** Vision-estimated micronutrients, all PER 100 g of the food. Feeds NutriScore. */
+export interface VisionMicros {
+  sugarsG100: number;
+  satFatG100: number;
+  sodiumMg100: number;
+  fibreG100: number;
+  /** Fruit / vegetable / legume / nut content of this item, 0–100 (%). */
+  plantPercent: number;
 }
 
 /** A region resolved down to its top candidate — B2/B4 only care about this. */
@@ -62,6 +86,8 @@ export interface RecognizedFoodItem {
   food: string;
   confidence: number;
   visionPortionEstimate?: VisionPortionEstimate;
+  visionMicros?: VisionMicros;
+  heldInHand?: boolean;
 }
 
 export interface PortionEstimate {
@@ -156,4 +182,12 @@ export interface MealSummary {
   glycemicEstimate?: GlycemicEstimate;
   /** Only present if a real glucose sensor/device is integrated and reported a reading for this session. */
   measuredGlucose?: MeasuredGlucoseReading;
+  /** Vision-estimated micronutrients for the meal, per serving (summed). See Nutrition/NutriProfile.ts. */
+  micros?: { sugarsG: number; satFatG: number; sodiumMg: number; fiberG: number };
+  /** Nutri-Score grade (A–E) for the primary food. A composition estimate, not a health verdict. */
+  nutriScore?: {
+    grade: 'A' | 'B' | 'C' | 'D' | 'E';
+    points: number;
+    color: { r: number; g: number; b: number };
+  };
 }

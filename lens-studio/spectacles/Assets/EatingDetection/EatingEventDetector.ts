@@ -33,8 +33,8 @@ export class EatingEventDetector extends BaseScriptComponent {
   staleTimeoutMs: number = 1500;
 
   @input
-  @hint('Minimum time between two EATING_EVENTs, so one hold is not double-counted.')
-  cooldownMs: number = 4000;
+  @hint('Minimum time between two EATING_EVENTs, so one continuous hold is not counted as many bites.')
+  cooldownMs: number = 2000;
 
   private state: EatingState = EatingState.NOT_EATING;
   private stateEnteredAtMs: number = 0;
@@ -102,9 +102,16 @@ export class EatingEventDetector extends BaseScriptComponent {
     }
   }
 
+  private cooldownLogAtMs = -Infinity;
+
   private fireEatingEvent(now: number): void {
     if (now - this.lastEventAtMs < this.cooldownMs) {
-      print('[FoodLens:EatingEvent] Confirmed hold ignored — still in cooldown from the last one.');
+      // Print at most once per cooldown window — the state machine re-reaches
+      // this branch every tick while food stays in hand, which floods the log.
+      if (now - this.cooldownLogAtMs > this.cooldownMs) {
+        this.cooldownLogAtMs = now;
+        print('[FoodLens:EatingEvent] Confirmed hold ignored — still in cooldown from the last one.');
+      }
       return; // debounce: don't double-count one hold
     }
     this.lastEventAtMs = now;

@@ -47,4 +47,4 @@
   InputLines:
     - // @input AssignableType cameraSampler
     - // @input Component.ScriptComponent foodAnalysisClientComponent
-    - '// @input float sessionGapMs = 15000 {"hint":"Once a bite is successfully analyzed, further bites within this many ms are treated as the same eating session and skip the backend call."}'
+    - '// @input float sessionGapMs = 7000 {"hint":"Once a bite is successfully analyzed, further bites within this many ms are treated as the same eating session and skip the backend call."}'

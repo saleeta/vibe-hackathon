@@ -30,6 +30,7 @@
     gymMenuRoot: false
     gymUIRoot: false
     landingRoot: false
+    navBackRoot: false
   ScriptTypesHidden:
     {}
   ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
@@ -43,6 +44,7 @@
       foodUIRoot: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
       gymMenuRoot: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
       gymUIRoot: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      navBackRoot: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
   ScriptTypes:
     -
       {}
@@ -51,3 +53,4 @@
     - '// @input SceneObject foodUIRoot {"hint":"Root containing NutritionHUD + DetectionBoxDebugView — the whole food-tracking visual stack."}'
     - '// @input SceneObject gymMenuRoot {"hint":"Root containing the Back button + Steps/Squats/Curls picker buttons — visible for the whole Gym session."}'
     - '// @input SceneObject gymUIRoot {"hint":"Root containing WorkoutHUD + DinoGame. WorkoutHUD/DinoGame further self-filter to only the picked exercise via AppEvents.onGymExerciseChanged."}'
+    - '// @input SceneObject navBackRoot {"hint":"Optional root holding a single shared Back button — shown in every mode except Landing so Health mode has a way out too."}'

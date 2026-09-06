@@ -69,6 +69,11 @@ export class HttpFoodAnalysisClient extends BaseScriptComponent implements IFood
       weightUncertaintyG: json.weightUncertaintyG,
       glycemicLoad: json.glycemicLoad,
       glycemicCategory: json.glycemicCategory,
+      sugarsG: json.sugarsG,
+      satFatG: json.satFatG,
+      sodiumMg: json.sodiumMg,
+      fiberG: json.fiberG,
+      nutriScore: json.nutriScore,
       foodConfidence: json.foodConfidence,
       portionConfidence: json.portionConfidence,
       // api/'s nested MealSummary.items carry per-item nutrition under `.nutrition`, not flat — unwrap it here.

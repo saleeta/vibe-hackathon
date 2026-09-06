@@ -24,6 +24,12 @@ export interface WorkoutSummary {
   curlWeightKg: number;
   /** Rough MET-style estimate, not a calibrated measurement — same "estimate" framing as the nutrition side's glycemic load (see docs/COMPLIANCE.md). */
   kcalBurned: number;
+  /** Approx distance walked, metres (steps × stride, stride from height). */
+  distanceM: number;
+  /** Per-exercise slices of kcalBurned, so the mini-card can show just the picked exercise's number. */
+  stepKcal: number;
+  squatKcal: number;
+  curlKcal: number;
 }
 
 export enum SquatState {

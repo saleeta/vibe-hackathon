@@ -131,6 +131,11 @@ function flattenForFoodAnalysisResult(summary: MealSummary) {
     weightUncertaintyG: primaryItem?.weightUncertaintyG,
     glycemicLoad: summary.glycemicEstimate?.totalGlycemicLoad,
     glycemicCategory: summary.glycemicEstimate?.category,
+    sugarsG: summary.micros?.sugarsG,
+    satFatG: summary.micros?.satFatG,
+    sodiumMg: summary.micros?.sodiumMg,
+    fiberG: summary.micros?.fiberG,
+    nutriScore: summary.nutriScore,
     foodConfidence: summary.confidence.foodConfidence,
     portionConfidence: summary.confidence.portionConfidence,
   };

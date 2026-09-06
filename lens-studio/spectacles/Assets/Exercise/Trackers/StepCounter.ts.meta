@@ -55,7 +55,7 @@
   InputLines:
     - "// @input float dipVelocityThreshold = 3 {\"hint\":\"Downward local-Y velocity (cm/sec, smoothed) that counts as the dip of a step's head bob. Lowered to 3 after 6 barely registered gentle/in-place walking; standing-still noise is still well under this.\"}"
     - '// @input float velocitySmoothing = 0.4 {"hint":"Smoothing factor for the velocity estimate, 0-1. Higher = more responsive, noisier — same convention as Hands/HandTracker.ts."}'
-    - '// @input float minBobAmplitudeCm = 3 {"hint":"Minimum peak-to-trough vertical movement (cm) during a dip to count as a real step, not sensor noise. Standing-still noise is < 1 cm; a walking step is 7-11 cm."}'
+    - '// @input float minBobAmplitudeCm = 1.5 {"hint":"Minimum peak-to-trough vertical movement (cm) during a dip to count as a real step, not sensor noise. Standing-still noise is < 1 cm; lowered to 1.5 after 3 missed gentle walking."}'
     - '// @input float debounceMs = 300 {"hint":"Minimum time between two counted steps, ms — the same \"one event, one count\" debounce EatingTrigger uses for eating sessions."}'
     - '// @input float startupSettleMs = 800 {"hint":"Delay after onAwake before reacting, ms — device tracking can report unstable/jumpy positions for the first moment after start, same rationale as SquatTracker.calibrationDelayMs."}'
     - '// @input float maxPlausibleVelocity = 150 {"hint":"Instantaneous velocity above this (cm/sec) is treated as a tracking glitch/relocalization jump, not real head motion, and ignored. Real walking head motion stays under ~30 cm/s; a relocalization jump is metres = hundreds of cm."}'
