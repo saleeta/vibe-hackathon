@@ -1,0 +1,65 @@
+- !<AssetImportMetadata/acbe0a8f-32de-4257-82be-ded21ff4940f>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> 1411be70-a52c-407e-a933-26c97135cd1b
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> 1411be70-a52c-407e-a933-26c97135cd1b
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> 3770b5df-4e51-4f62-9c3e-fc6183ae8036
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/3770b5df-4e51-4f62-9c3e-fc6183ae8036>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: 72e335b3-d952-4abc-a2b6-26d02c7931fd
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    autoStartMs: false
+    camera: false
+    dumpRawRows: false
+    fastSetSeconds: false
+    holdSeconds: false
+    promptText: false
+    sampleIntervalMs: false
+    slowSetSeconds: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - camera: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      promptText: !<reference.Text> 00000000-0000-0000-0000-000000000000
+      sampleIntervalMs: !<float> 40.000000
+      autoStartMs: !<float> 5000.000000
+      holdSeconds: !<float> 6.000000
+      slowSetSeconds: !<float> 22.000000
+      fastSetSeconds: !<float> 14.000000
+      dumpRawRows: true
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - '// @input SceneObject camera {"hint":"The camera SceneObject (head-height reference)."}'
+    - '// @input Component.Text promptText {"hint":"Big on-screen instruction text. Line 1 = what to do, line 2 = countdown."}'
+    - '// @input float sampleIntervalMs = 60 {"hint":"Milliseconds between logged CSV rows. 60 = ~16 Hz."}'
+    - '// @input float autoStartMs = 6000 {"hint":"If no pinch happens, auto-start the sequence this many ms after awake. 0 = wait for pinch only."}'
+    - '// @input float holdSeconds = 6 {"hint":"Seconds for the held-pose / rest phases."}'
+    - '// @input float slowSetSeconds = 22 {"hint":"Seconds for a SLOW curl set (aim ~5 full reps)."}'
+    - '// @input float fastSetSeconds = 14 {"hint":"Seconds for the FAST curl set (aim ~8 reps)."}'
+    - '// @input bool dumpRawRows = true {"hint":"Also dump every raw CSV row at the end. Off = per-phase SUMMARY only."}'

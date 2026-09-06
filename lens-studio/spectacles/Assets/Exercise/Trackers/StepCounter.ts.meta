@@ -1,0 +1,62 @@
+- !<AssetImportMetadata/6dab491e-afbe-437c-bdf8-14a04fc03abd>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> 8f5719ff-0e52-4fe8-b626-f171da361bc8
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> 8f5719ff-0e52-4fe8-b626-f171da361bc8
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> fcd8eed6-0df8-4d01-92f7-637226a9024b
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/fcd8eed6-0df8-4d01-92f7-637226a9024b>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: f8422fe1-8a1b-471e-b9fe-2cdddb6a2d2a
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    debounceMs: false
+    diagnosticIntervalMs: false
+    dipVelocityThreshold: false
+    maxPlausibleVelocity: false
+    minBobAmplitudeCm: false
+    startupSettleMs: false
+    velocitySmoothing: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - dipVelocityThreshold: 0.150000
+      velocitySmoothing: 0.400000
+      minBobAmplitudeCm: !<float> 3.000000
+      debounceMs: !<float> 300.000000
+      startupSettleMs: !<float> 800.000000
+      maxPlausibleVelocity: 2.500000
+      diagnosticIntervalMs: !<float> 1000.000000
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - "// @input float dipVelocityThreshold = 3 {\"hint\":\"Downward local-Y velocity (cm/sec, smoothed) that counts as the dip of a step's head bob. Lowered to 3 after 6 barely registered gentle/in-place walking; standing-still noise is still well under this.\"}"
+    - '// @input float velocitySmoothing = 0.4 {"hint":"Smoothing factor for the velocity estimate, 0-1. Higher = more responsive, noisier — same convention as Hands/HandTracker.ts."}'
+    - '// @input float minBobAmplitudeCm = 3 {"hint":"Minimum peak-to-trough vertical movement (cm) during a dip to count as a real step, not sensor noise. Standing-still noise is < 1 cm; a walking step is 7-11 cm."}'
+    - '// @input float debounceMs = 300 {"hint":"Minimum time between two counted steps, ms — the same \"one event, one count\" debounce EatingTrigger uses for eating sessions."}'
+    - '// @input float startupSettleMs = 800 {"hint":"Delay after onAwake before reacting, ms — device tracking can report unstable/jumpy positions for the first moment after start, same rationale as SquatTracker.calibrationDelayMs."}'
+    - '// @input float maxPlausibleVelocity = 150 {"hint":"Instantaneous velocity above this (cm/sec) is treated as a tracking glitch/relocalization jump, not real head motion, and ignored. Real walking head motion stays under ~30 cm/s; a relocalization jump is metres = hundreds of cm."}'
+    - '// @input float diagnosticIntervalMs = 1000 {"hint":"How often (ms) to print a diagnostic line with the live velocity/position while tuning. 0 disables."}'

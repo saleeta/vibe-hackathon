@@ -1,0 +1,50 @@
+- !<AssetImportMetadata/56dbf758-2eac-461b-9819-8113136c4140>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> 02767be4-d47a-47ca-b146-8dade31f4578
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> 02767be4-d47a-47ca-b146-8dade31f4578
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> 7751aae5-8611-4be3-bcd8-f795711bc95e
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/7751aae5-8611-4be3-bcd8-f795711bc95e>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: 913b11a9-52e1-491c-a71b-84ebcdc425bb
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    bodyWeightKg: false
+    curlWeightKg: false
+    heightCm: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - curlWeightKg: !<float> 5.000000
+      bodyWeightKg: !<float> 70.000000
+      heightCm: !<float> 170.000000
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - "// @input float curlWeightKg = 5 {\"hint\":\"Weight being curled, in kg — set this before a set. Spectacles can't sense actual load, so this is manual.\"}"
+    - '// @input float bodyWeightKg = 65 {"hint":"Body weight in kg, used for the walking/squat calorie estimate."}'
+    - '// @input float heightCm = 170 {"hint":"Height in cm, used to approximate stride length for the walking calorie estimate."}'

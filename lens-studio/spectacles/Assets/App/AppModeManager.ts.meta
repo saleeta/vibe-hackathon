@@ -1,0 +1,53 @@
+- !<AssetImportMetadata/258d33d5-6b43-465e-a7b4-fbf41fdcd80d>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> c47bcf6c-1d9f-4602-97c1-305fb90ed57c
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> c47bcf6c-1d9f-4602-97c1-305fb90ed57c
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> b741d06a-5259-4a29-9b12-fce4a53dc14a
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/b741d06a-5259-4a29-9b12-fce4a53dc14a>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: fb72d302-3359-4c20-b60e-62b574380539
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    foodUIRoot: false
+    gymMenuRoot: false
+    gymUIRoot: false
+    landingRoot: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - landingRoot: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      foodUIRoot: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      gymMenuRoot: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      gymUIRoot: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - '// @input SceneObject landingRoot {"hint":"Root containing the Food/Gym choice buttons."}'
+    - '// @input SceneObject foodUIRoot {"hint":"Root containing NutritionHUD + DetectionBoxDebugView — the whole food-tracking visual stack."}'
+    - '// @input SceneObject gymMenuRoot {"hint":"Root containing the Back button + Steps/Squats/Curls picker buttons — visible for the whole Gym session."}'
+    - '// @input SceneObject gymUIRoot {"hint":"Root containing WorkoutHUD + DinoGame. WorkoutHUD/DinoGame further self-filter to only the picked exercise via AppEvents.onGymExerciseChanged."}'

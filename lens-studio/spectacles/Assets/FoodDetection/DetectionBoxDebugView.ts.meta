@@ -22,11 +22,12 @@
   VersionMajor: 0
   VersionMinor: 0
   VersionPatch: 0
-  ComponentUid: 00000000-0000-0000-0000-000000000000
+  ComponentUid: 21133659-b655-43af-9a9f-67d1a08aed66
   ExportUid: 00000000-0000-0000-0000-000000000000
   PackagePolicy: CanBeUnpacked
   ScriptInputsHidden:
-    {}
+    boxText: false
+    hideAfterMs: false
   ScriptTypesHidden:
     {}
   ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
@@ -36,10 +37,11 @@
   Attachments:
     []
   DefaultScriptInputs:
-    -
-      {}
+    - boxText: !<reference.Text> 00000000-0000-0000-0000-000000000000
+      hideAfterMs: !<float> 600.000000
   ScriptTypes:
     -
       {}
   InputLines:
-    []
+    - '// @input Component.Text boxText {"hint":"A Text component with backgroundSettings enabled — its fill acts as the \"box\", its text as the label."}'
+    - '// @input float hideAfterMs = 600 {"hint":"Hide the box if no new detection arrives within this many ms, so a stale box does not linger once food leaves view."}'

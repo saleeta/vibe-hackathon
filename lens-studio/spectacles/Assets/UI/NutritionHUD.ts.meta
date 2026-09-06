@@ -26,12 +26,15 @@
   ExportUid: 00000000-0000-0000-0000-000000000000
   PackagePolicy: CanBeUnpacked
   ScriptInputsHidden:
+    cardDepthM: false
+    cardRoot: false
     confidenceText: false
     displayDurationMs: false
     fadeOutMs: false
     glycemicText: false
     headlineText: false
     macrosText: false
+    worldCamera: false
   ScriptTypesHidden:
     {}
   ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
@@ -41,7 +44,10 @@
   Attachments:
     []
   DefaultScriptInputs:
-    - headlineText: !<reference.Text> 00000000-0000-0000-0000-000000000000
+    - cardRoot: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      worldCamera: !<reference.Camera> 00000000-0000-0000-0000-000000000000
+      cardDepthM: 0.500000
+      headlineText: !<reference.Text> 00000000-0000-0000-0000-000000000000
       macrosText: !<reference.Text> 00000000-0000-0000-0000-000000000000
       glycemicText: !<reference.Text> 00000000-0000-0000-0000-000000000000
       confidenceText: !<reference.Text> 00000000-0000-0000-0000-000000000000
@@ -51,6 +57,9 @@
     -
       {}
   InputLines:
+    - '// @input SceneObject cardRoot {"hint":"The Billboard-rotated parent of all the card text — this is what gets pinned in world space. Add a Billboard component (SIK) to it separately."}'
+    - // @input Component.Camera worldCamera
+    - "// @input float cardDepthM = 0.5 {\"hint\":\"Distance in front of the camera (meters) to pin the card, projected through the detected food's screen position.\"}"
     - // @input Component.Text headlineText
     - '// @input Component.Text macrosText {"hint":"Optional — protein/carbs/fat line. Only shown after a pinch expands the card."}'
     - '// @input Component.Text glycemicText {"hint":"Optional — estimated glycemic load + category. Always labeled as an estimate, never \"blood sugar\". Only shown expanded."}'

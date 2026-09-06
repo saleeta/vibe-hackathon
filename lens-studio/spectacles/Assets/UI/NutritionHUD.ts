@@ -1,15 +1,22 @@
 /**
- * The on-screen result of a confirmed eating event: a compact product card
- * (food + calories) that appears beside the detected food's bounding box,
- * with the fuller macros/glycemic/confidence breakdown revealed only on a
- * pinch gesture — minimal by default, expandable on demand, never a wall of
- * text shown unconditionally.
+ * The result of a confirmed eating event: a compact product card (food +
+ * calories) pinned in 3D world space near the detected food, with the
+ * fuller macros/glycemic/confidence breakdown revealed only on a pinch
+ * gesture — minimal by default, expandable on demand.
  *
- * Card placement: tracks the same `PerceptionEvents.onObjectsDetected`
- * signal `DetectionBoxDebugView` draws its box from, and places itself just
- * outside that box (to the right if there's room, otherwise the left) —
- * same approximation caveat as that box (see OnDeviceObjectDetector.ts):
- * not pixel-precise, good enough to read as "next to the food."
+ * World-anchored, not screen-locked: `cardRoot` carries a Billboard
+ * component (SIK) so the card always faces the wearer, but its *position*
+ * is a real point in world space — pinned once per result via
+ * `worldCamera.screenSpaceToWorldSpace()` at `cardDepthM` in front of the
+ * camera, through the last known detection box's center. Because it's a
+ * fixed world point rather than a screen overlay, turning away from the
+ * food naturally takes the card out of view, the same way any other AR
+ * object would — no extra visibility logic needed for that.
+ *
+ * Card placement source: the same `PerceptionEvents.onObjectsDetected`
+ * signal `DetectionBoxDebugView` draws its 2D box from — same approximation
+ * caveat as that box (see OnDeviceObjectDetector.ts): not pixel-precise,
+ * good enough to land the card "near the food."
  *
  * Expand/collapse: `GestureModule.getFilteredPinchDownEvent` (same API
  * Snap's own RemoteServiceGateway example scripts use for tap-equivalent
@@ -29,6 +36,17 @@ interface NormalizedBox {
 
 @component
 export class NutritionHUD extends BaseScriptComponent {
+  @input
+  @hint('The Billboard-rotated parent of all the card text — this is what gets pinned in world space. Add a Billboard component (SIK) to it separately.')
+  cardRoot: SceneObject;
+
+  @input
+  worldCamera: Camera;
+
+  @input
+  @hint('Distance in front of the camera (meters) to pin the card, projected through the detected food\'s screen position.')
+  cardDepthM: number = 0.5;
+
   @input
   headlineText: Text; // e.g. "Chicken · 297 kcal" — always shown
 
@@ -51,10 +69,6 @@ export class NutritionHUD extends BaseScriptComponent {
 
   private hideCallback: DelayedCallbackEvent | null = null;
   private allTexts: Text[] = [];
-  private headlineTransform: ScreenTransform;
-  private macrosTransform: ScreenTransform | null = null;
-  private glycemicTransform: ScreenTransform | null = null;
-  private confidenceTransform: ScreenTransform | null = null;
 
   private latestResult: FoodAnalysisResult | null = null;
   private latestBox: NormalizedBox | null = null;
@@ -68,11 +82,7 @@ export class NutritionHUD extends BaseScriptComponent {
     for (const t of this.allTexts) {
       t.getSceneObject().enabled = false;
     }
-
-    this.headlineTransform = this.headlineText.getSceneObject().getComponent('Component.ScreenTransform');
-    this.macrosTransform = this.macrosText?.getSceneObject().getComponent('Component.ScreenTransform') ?? null;
-    this.glycemicTransform = this.glycemicText?.getSceneObject().getComponent('Component.ScreenTransform') ?? null;
-    this.confidenceTransform = this.confidenceText?.getSceneObject().getComponent('Component.ScreenTransform') ?? null;
+    this.cardRoot.enabled = false;
 
     PerceptionEvents.onObjectsDetected.add((objects) => this.trackLatestBox(objects));
     PerceptionEvents.onFoodAnalyzed.add((result) => this.show(result));
@@ -100,66 +110,30 @@ export class NutritionHUD extends BaseScriptComponent {
     this.latestResult = result;
     this.expanded = false; // always start minimal on a new result
     this.visible = true;
-    this.positionNearBox();
+    this.cardRoot.enabled = true;
+    this.pinCardInWorld();
     this.render();
     this.scheduleHide();
   }
 
   /**
-   * Places the card just outside the last known food bounding box — right if
-   * there's room, else left — but always fully clamped within a safe margin
-   * of the visible frame first, so the card itself is never the thing that
-   * decides whether it's fully on-screen; the "beside the box" placement is
-   * a preference applied on top of that guarantee, not instead of it.
+   * Projects the last known detection box's center through the camera into
+   * world space at `cardDepthM`, and pins `cardRoot` there once. Not
+   * re-projected every frame — this is a "the food was here" marker for
+   * the duration of the display, not a live tracker following hand sway.
    */
-  private positionNearBox(): void {
-    const margin = 0.04; // keep the card off the very edge of the visible frame
-    const box = this.latestBox ?? { x: 0.3, y: 0.3, width: 0.4, height: 0.3 };
-    const cardWidth = 0.42;
-    const rowHeight = 0.065; // smaller now that font sizes shrank
-    const gap = 0.03;
-
-    // The macros slot grows by one row per extra food item (each gets its own
-    // "food · kcal" line) plus one row for the aggregate protein/carbs/fat —
-    // a two-item plate needs more vertical room than a single-food result.
-    const itemCount = this.latestResult?.items?.length ?? 0;
-    const macrosRows = itemCount > 1 ? itemCount + 1 : 1;
-    const totalRows = 1 /* headline */ + macrosRows + 1 /* glycemic */ + 1 /* confidence */;
-    const cardHeight = rowHeight * totalRows;
-
-    const minLeft = margin;
-    const maxLeft = 1 - margin - cardWidth;
-
-    let cardLeft: number;
-    if (box.x + box.width + gap + cardWidth <= 1 - margin) {
-      cardLeft = box.x + box.width + gap; // room to the right
-    } else if (box.x - gap - cardWidth >= margin) {
-      cardLeft = box.x - gap - cardWidth; // room to the left
-    } else {
-      cardLeft = box.x > 0.5 ? minLeft : maxLeft; // box spans most of the frame — pick whichever side has more room
+  private pinCardInWorld(): void {
+    if (!this.worldCamera) {
+      print('[FoodLens:HUD] ERROR — worldCamera is not set, cannot place the card in world space.');
+      return;
     }
-    cardLeft = Math.max(minLeft, Math.min(maxLeft, cardLeft));
-    const cardRight = cardLeft + cardWidth;
+    const margin = 0.06; // keep the projection point off the extreme edge of the view
+    const box = this.latestBox ?? { x: 0.3, y: 0.3, width: 0.4, height: 0.3 };
+    const centerX = Math.max(margin, Math.min(1 - margin, box.x + box.width / 2));
+    const centerY = Math.max(margin, Math.min(1 - margin, box.y + box.height / 2));
 
-    const startTop = Math.max(margin, Math.min(1 - margin - cardHeight, box.y));
-
-    const macrosTop = startTop + rowHeight;
-    const macrosBottom = macrosTop + rowHeight * macrosRows;
-
-    this.applyAnchor(this.headlineTransform, cardLeft, cardRight, startTop, macrosTop);
-    if (this.macrosTransform) this.applyAnchor(this.macrosTransform, cardLeft, cardRight, macrosTop, macrosBottom);
-    if (this.glycemicTransform) this.applyAnchor(this.glycemicTransform, cardLeft, cardRight, macrosBottom, macrosBottom + rowHeight);
-    if (this.confidenceTransform) this.applyAnchor(this.confidenceTransform, cardLeft, cardRight, macrosBottom + rowHeight, macrosBottom + rowHeight * 2);
-  }
-
-  /** left/right/top/bottom in normalized [0-1], origin top-left -> ScreenTransform anchors [-1,1], origin center, y-up. */
-  private applyAnchor(transform: ScreenTransform, leftNorm: number, rightNorm: number, topNorm: number, bottomNorm: number): void {
-    const anchors = transform.anchors;
-    anchors.left = leftNorm * 2 - 1;
-    anchors.right = rightNorm * 2 - 1;
-    anchors.top = 1 - topNorm * 2;
-    anchors.bottom = 1 - bottomNorm * 2;
-    transform.anchors = anchors;
+    const worldPos = this.worldCamera.screenSpaceToWorldSpace(new vec2(centerX, centerY), this.cardDepthM);
+    this.cardRoot.getTransform().setWorldPosition(worldPos);
   }
 
   private render(): void {
@@ -236,6 +210,7 @@ export class NutritionHUD extends BaseScriptComponent {
         for (const text of this.allTexts) {
           text.getSceneObject().enabled = false;
         }
+        this.cardRoot.enabled = false;
         this.visible = false;
         this.latestResult = null;
         fadeEvent.enabled = false;

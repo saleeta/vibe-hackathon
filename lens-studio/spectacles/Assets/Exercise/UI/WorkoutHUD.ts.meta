@@ -1,0 +1,53 @@
+- !<AssetImportMetadata/0a74fad6-78e0-4560-9903-198178c2f43c>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> 87e9ed9c-bc68-44ad-8494-0d5822bf0de0
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> 87e9ed9c-bc68-44ad-8494-0d5822bf0de0
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> b85fa03c-c3d2-4c14-9baa-dbea39fd8b15
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/b85fa03c-c3d2-4c14-9baa-dbea39fd8b15>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: 0e5f943f-1ce8-4938-a250-69699545b65e
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    caloriesText: false
+    curlsText: false
+    squatsText: false
+    stepsText: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - stepsText: !<reference.Text> 00000000-0000-0000-0000-000000000000
+      squatsText: !<reference.Text> 00000000-0000-0000-0000-000000000000
+      curlsText: !<reference.Text> 00000000-0000-0000-0000-000000000000
+      caloriesText: !<reference.Text> 00000000-0000-0000-0000-000000000000
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - // @input Component.Text stepsText
+    - // @input Component.Text squatsText
+    - // @input Component.Text curlsText
+    - '// @input Component.Text caloriesText {"hint":"Optional — rough calorie estimate. See WorkoutManager.estimateKcal for the caveat."}'

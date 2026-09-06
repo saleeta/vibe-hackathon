@@ -1,0 +1,56 @@
+- !<AssetImportMetadata/c8050ff8-81d3-4bb1-a568-6964bdcc97cf>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> 90f53a20-8a0c-426e-85b6-0c35eba62f1d
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> 90f53a20-8a0c-426e-85b6-0c35eba62f1d
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> 2aa2e273-48a8-4d4e-8487-0ec8ea1d0958
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/2aa2e273-48a8-4d4e-8487-0ec8ea1d0958>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: 1293c0ed-e2e3-41d6-b1c4-af0a98c1d5a2
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    calibrationDelayMs: false
+    diagnosticIntervalMs: false
+    dipThresholdCm: false
+    maxSquatMs: false
+    returnMarginCm: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - dipThresholdCm: !<float> 22.000000
+      returnMarginCm: !<float> 8.000000
+      maxSquatMs: !<float> 3500.000000
+      calibrationDelayMs: !<float> 1000.000000
+      diagnosticIntervalMs: !<float> 1000.000000
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - '// @input float dipThresholdCm = 18 {"hint":"How far below the standing baseline (cm) counts as a squat. Walking only dips ~7 cm; a real squat is 40+ cm. 18 leaves margin for an imperfect baseline."}'
+    - '// @input float returnMarginCm = 12 {"hint":"Once dipped, must rise back within this many cm of the baseline to count as \"returned to standing\". 12 tolerates a few cm of baseline drift."}'
+    - '// @input float maxSquatMs = 9000 {"hint":"Only if the dip is held longer than this (ms) is it treated as a sit (no rep, re-sample baseline on standing up). Set generously — even a slow controlled squat rep is well under 9 s; a sit is 10 s+."}'
+    - '// @input float calibrationDelayMs = 1500 {"hint":"Delay after onAwake before sampling the standing baseline height, ms."}'
+    - '// @input float diagnosticIntervalMs = 1000 {"hint":"How often (ms) to print a diagnostic line with the live baseline / height / dip / state while tuning. 0 disables."}'

@@ -1,0 +1,83 @@
+- !<AssetImportMetadata/1f432f16-fe52-497b-8782-1e9fac6fbc77>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> e692d08a-1470-4544-b85b-8fcee4179902
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> e692d08a-1470-4544-b85b-8fcee4179902
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> 7d5d910c-aed9-4457-8b98-55a2540749f2
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/7d5d910c-aed9-4457-8b98-55a2540749f2>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: 73119824-d75b-4f84-8d99-47e0c2765547
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    curlTimeoutMs: false
+    curlWeightKg: false
+    curledHeightThreshold: false
+    diagnosticIntervalMs: false
+    extendedHeightThreshold: false
+    hand: false
+    handDebugMarker: false
+    handDebugText: false
+    headAnchor: false
+    headDebugMarker: false
+    headDebugText: false
+    heightSmoothing: false
+    trackingGraceMs: false
+    trackingSettleMs: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - hand: right
+      headAnchor: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      curledHeightThreshold: -0.100000
+      extendedHeightThreshold: -0.400000
+      curlTimeoutMs: !<float> 4000.000000
+      curlWeightKg: !<float> 5.000000
+      heightSmoothing: 0.350000
+      trackingSettleMs: !<float> 300.000000
+      trackingGraceMs: !<float> 400.000000
+      diagnosticIntervalMs: !<float> 500.000000
+      handDebugMarker: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      handDebugText: !<reference.Text> 00000000-0000-0000-0000-000000000000
+      headDebugMarker: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      headDebugText: !<reference.Text> 00000000-0000-0000-0000-000000000000
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - '// @input string hand = "right" {"hint":"Which hand to track for curls — \"left\" or \"right\"."}'
+    - '// @input SceneObject headAnchor {"hint":"Anchor approximating head/camera height (e.g. the world camera object)."}'
+    - '// @input float curledHeightThreshold = -20 {"hint":"Index-tip height relative to the head anchor (cm) to count as \"curled\". Captured curl up-swings cross well above -20 (peaks -9..-17) while still tracked; the fully-held-up pose itself is out of the tracking volume, so this is a pass-through crossing, not an endpoint."}'
+    - '// @input float extendedHeightThreshold = -45 {"hint":"Index-tip height relative to the head anchor (cm) to count as \"extended\". Captured down-swings reliably cross -45 while tracked (they bottom out -50..-66 but tracking often drops before then), so -45 not -60."}'
+    - '// @input float curlTimeoutMs = 4000 {"hint":"If stuck in the \"curled\" state longer than this (ms) — usually because the hand went out of the tracking volume at the top of a rep — silently reset to \"extended\" so the counter does not jam. No rep is counted."}'
+    - "// @input float curlWeightKg = 5 {\"hint\":\"Weight being curled, in kg — Spectacles can't sense actual load, so this is manual. Keep in sync with WorkoutManager.curlWeightKg.\"}"
+    - '// @input float heightSmoothing = 0.35 {"hint":"Smoothing factor for relativeHeight, 0-1. Higher = more responsive, noisier. Filters out single-frame tracking spikes."}'
+    - '// @input float trackingSettleMs = 300 {"hint":"Ignore readings for this many ms right after the hand is (re)acquired — the first tracked position after acquisition is frequently garbage/stale."}'
+    - '// @input float trackingGraceMs = 400 {"hint":"If tracking drops for less than this many ms, hold the curl state instead of resetting — a curl routinely nudges the hand past the FOV edge mid-rep. Longer gaps are treated as a real loss (re-settle on re-acquire)."}'
+    - '// @input float diagnosticIntervalMs = 500 {"hint":"How often (ms) to print a diagnostic line with the live wrist height while tuning. 0 disables."}'
+    - "// @input SceneObject handDebugMarker {\"hint\":\"Optional — a plain 3D Text (no ScreenTransform) pinned live to the tracked hand's actual world position, showing the live numbers. Lets you visually check whether the tracked point is really where your hand is.\"}"
+    - // @input Component.Text handDebugText
+    - "// @input SceneObject headDebugMarker {\"hint\":\"Optional — a plain 3D Text pinned to the head anchor's world position, for the same visual sanity check.\"}"
+    - // @input Component.Text headDebugText

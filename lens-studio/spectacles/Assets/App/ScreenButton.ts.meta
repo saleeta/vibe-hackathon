@@ -1,0 +1,56 @@
+- !<AssetImportMetadata/262dc1c8-09df-4e51-ba12-8fd8b9926d0f>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> 3e3b3450-35d4-4fa5-9352-9b1f9f351187
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> 3e3b3450-35d4-4fa5-9352-9b1f9f351187
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> 2e8179ba-ec0b-4cc5-a178-bb1351588a56
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/2e8179ba-ec0b-4cc5-a178-bb1351588a56>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: ab754992-edea-4b74-92fe-921d71792f8c
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    buttonId: false
+    buttonText: false
+    hoverGraceMs: false
+    pressFlashMs: false
+    worldCamera: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - buttonId: ""
+      buttonText: !<reference.Text> 00000000-0000-0000-0000-000000000000
+      worldCamera: !<reference.Camera> 00000000-0000-0000-0000-000000000000
+      hoverGraceMs: !<float> 350.000000
+      pressFlashMs: !<float> 200.000000
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - '// @input string buttonId {"hint":"Identifies this button to whatever listens on AppEvents.onButtonPressed, e.g. \"mode:food\"."}'
+    - // @input Component.Text buttonText
+    - // @input Component.Camera worldCamera
+    - '// @input float hoverGraceMs = 350 {"hint":"A pinch still counts if the hand was hovering this button within the last N ms — covers the pinch motion itself nudging the fingertip out of the rect."}'
+    - '// @input float pressFlashMs = 200 {"hint":"How long (ms) the bright \"pressed\" flash lasts before reverting to the normal/hover text color."}'

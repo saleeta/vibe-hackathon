@@ -64,10 +64,20 @@ export class HandTracker extends BaseScriptComponent {
         indexTipPosition: vec3.zero(),
         velocity: vec3.zero(),
         timestampMillis,
+        palmPitchDeg: null,
+        wristForward: vec3.zero(),
+        wristUp: vec3.zero(),
+        isFacingCamera: false,
       };
     }
 
-    const palmPosition: vec3 = hand.palmCenter?.position ?? vec3.zero();
+    // SIK's TrackedHand exposes the palm centre as a METHOD, `getPalmCenter(): vec3 | null`,
+    // not a `palmCenter` keypoint — reading `hand.palmCenter?.position` silently yielded
+    // vec3.zero() on every tracked frame, which is why anything keyed off palmPosition
+    // (e.g. BicepCurlTracker) never worked. `hand.indexTip.position` (a real Keypoint
+    // getter) has always been valid.
+    const palmPosition: vec3 =
+      (typeof hand.getPalmCenter === 'function' ? hand.getPalmCenter() : hand.palmCenter?.position) ?? vec3.zero();
     const indexTipPosition: vec3 = hand.indexTip?.position ?? palmPosition;
 
     const instantVelocity = palmPosition.sub(this.prevPositions[side]).uniformScale(1 / dt);
@@ -77,6 +87,26 @@ export class HandTracker extends BaseScriptComponent {
     this.smoothedVelocity[side] = smoothed;
     this.prevPositions[side] = palmPosition;
 
+    // Orientation channels — defensive, since the exact SIK TrackedHand shape
+    // has bitten this file before (see palmCenter note above).
+    let palmPitchDeg: number | null = null;
+    let wristForward = vec3.zero();
+    let wristUp = vec3.zero();
+    let isFacingCamera = false;
+    try {
+      if (typeof hand.getPalmPitchAngle === 'function') {
+        const p = hand.getPalmPitchAngle();
+        palmPitchDeg = typeof p === 'number' ? p : null;
+      }
+      if (hand.wrist) {
+        wristForward = hand.wrist.forward ?? vec3.zero();
+        wristUp = hand.wrist.up ?? vec3.zero();
+      }
+      if (typeof hand.isFacingCamera === 'function') isFacingCamera = !!hand.isFacingCamera();
+    } catch (err) {
+      // SIK shape mismatch — leave the defaults, don't take the pipeline down.
+    }
+
     return {
       side,
       isTracked: true,
@@ -84,6 +114,10 @@ export class HandTracker extends BaseScriptComponent {
       indexTipPosition,
       velocity: smoothed,
       timestampMillis,
+      palmPitchDeg,
+      wristForward,
+      wristUp,
+      isFacingCamera,
     };
   }
 

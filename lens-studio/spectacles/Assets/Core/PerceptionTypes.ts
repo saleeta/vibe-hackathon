@@ -22,6 +22,20 @@ export interface HandState {
   /** Approximate world-space velocity (units/sec), smoothed. */
   velocity: vec3;
   timestampMillis: number;
+
+  // --- Orientation channels (optional; populated by HandTracker from SIK's
+  // TrackedHand). More field-of-view-tolerant than absolute position, so
+  // useful for gestures like a bicep curl where the hand nears the FOV edge. ---
+
+  /** SIK `getPalmPitchAngle()` in degrees, or null if unavailable / untracked. */
+  palmPitchDeg?: number | null;
+  /** Wrist "forward" unit vector (points toward the fingers, roughly along the
+   * forearm), world space. Its Y sweeps monotonically through a curl. Zero when untracked. */
+  wristForward?: vec3;
+  /** Wrist "up" unit vector, world space. Zero when untracked. */
+  wristUp?: vec3;
+  /** SIK `isFacingCamera()` — coarse check that the tracked pose is real. */
+  isFacingCamera?: boolean;
 }
 
 export interface HandsSnapshot {
